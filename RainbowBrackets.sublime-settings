@@ -1,0 +1,40 @@
+{
+    // model: "all" and "lineal"
+    // if you choose all, it will color all brackets
+    // if you choose lineal, it will just color those
+    // brackets that contains the cursor directly.
+    "supported_languages": {
+        "scheme": {
+            "extensions": ["scm", "ss"],
+            "model": "lineal",
+            "brackets": {
+                "(": ")",
+                "[": "]",
+                "{": "}"
+            }
+        },
+        "json": {
+            "extensions": ["json", "sublime-settings", "sublime-color-scheme"],
+            "model": "lineal",
+            "brackets": {
+                "[": "]",
+                "{": "}"
+            }
+        },
+        // "html":{
+        //     "extensions": ["html"],
+        //     "brackets": {
+        //         "div": "/div",
+        //     }
+        // }
+    },
+    "brackets_colors":[
+        "#FF0000",
+        "#FF6A00",
+        "#FFD800",
+        "#00FF00",
+        "#0094FF",
+        "#0041FF",
+        "#7D00E5"
+    ]
+}
