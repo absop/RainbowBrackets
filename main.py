@@ -8,8 +8,12 @@ from .plugins import profile
 from .plugins.searcher import BracketsSearcher
 
 
-def on_save_debug():
-    return False
+class Debuger:
+    debug = True
+
+    def print(*args):
+        if Debuger.debug:
+            print(*args)
 
 
 class ColorSchemeWriter(object):
@@ -39,15 +43,15 @@ class ColorSchemeWriter(object):
     def update_scheme(self, color_scheme):
         self.__init__(color_scheme)
 
-        def flush_view():
+        def flush_views():
+            Debuger.print("flush_views, color_scheme: ", self.color_scheme)
             for window in sublime.windows():
                 for view in window.views():
-                    if view.settings().has("rainbow_brackets"):
-                        if on_save_debug():
-                            print(view.file_name(), self.color_scheme)
+                    if view.settings().has("rainbow"):
                         view.settings().set("color_scheme", self.color_scheme)
+                        Debuger.print("\tfile: ", view.file_name())
 
-        sublime.set_timeout(flush_view, 500)
+        sublime.set_timeout(flush_views, 500)
 
     def update_colors(self, colors):
         self.brackets_colors = colors
@@ -79,19 +83,18 @@ class ColorSchemeWriter(object):
 
         with open(self.abspath, "w") as file:
             file.write(json.dumps(self.scheme_data))
+        Debuger.print("write color_scheme: ", self.abspath)
 
     def brackets_layer_to(self, to):
         self.brackets_layer_from_to(self.deepest_layer, to)
 
 
-class BracketsRender(object):
+class BracketsViewListener(object):
     def __init__(self, view, brackets):
         self.view = view
         self.searcher = BracketsSearcher(view, brackets)
-        if on_save_debug():
-            print(brackets)
 
-    def render(self, region):
+    def add_all_brackets(self, region):
         matched_brackets, unmatched_brackets =  self.searcher.get_brackets_by_layer(region)
         for layer in sorted(matched_brackets):
             regions = [sublime.Region(p, p+1) for p in matched_brackets[layer]]
@@ -100,67 +103,86 @@ class BracketsRender(object):
                 scope=key,
                 flags=sublime.DRAW_NO_OUTLINE)
 
+    def on_load(self):
+        self.add_all_brackets(sublime.Region(0, self.view.size()))
+
     def on_modified(self):
         pass
 
-    def on_load(self):
-        self.render(sublime.Region(0, self.view.size()))
+    def on_activated(self):
+        self.on_load()
 
     def on_hover(self, point, hover_zone):
+        pass
+
+    def on_selection_modified(self):
         pass
 
 
 class RainbowBracketsListener(sublime_plugin.EventListener):
     view_listeners = {}
 
-    def on_load(self, view):
-        lang = extensions = supported_brackets = None
-
+    def supported_brackets_of_view(self, view):
+        language = extensions = supported_brackets = None
         if view.file_name() and os.path.splitext(view.file_name())[1]:
             extensions = os.path.splitext(view.file_name())[1].lstrip(".")
         if view.settings().get("syntax", None):
             syntax = view.settings().get("syntax", None)
-            lang = os.path.basename(syntax[:-15]).lower()
-        if lang not in self.supported_languages:
-            for l in self.supported_languages:
-                if extensions in self.supported_languages[l]["extensions"]:
-                    lang = l
+            language = os.path.basename(syntax[:-15]).lower()
+        if language not in self.supported_languages:
+            for lang in self.supported_languages:
+                if extensions in self.supported_languages[lang]["extensions"]:
+                    language = lang
                     break
-        if (lang in self.supported_languages and
-            self.supported_languages[lang].get("brackets", {})):
-            supported_brackets = self.supported_languages[lang].get("brackets", {})
-            brackets_render = BracketsRender(view, supported_brackets)
-            brackets_render.on_load()
+        if language in self.supported_languages:
+            return self.supported_languages[language].get("brackets", {})
+
+    def on_load(self, view):
+        supported_brackets = self.supported_brackets_of_view(view)
+        if supported_brackets:
+            listener = BracketsViewListener(view, supported_brackets)
+            listener.on_load()
             view.settings().set("color_scheme", self.color_scheme)
-            view.settings().set("rainbow_brackets", True)
-            self.view_listeners[view.id()] = brackets_render
+            view.settings().set("rainbow", True)
+            self.view_listeners[view.id()] = listener
 
-            if on_save_debug():
-                print("render running: ", view.file_name())
-
-    def on_new(self, view):
-        pass
-        self.on_load(view)
+            Debuger.print("on_load: file: {}, brackets: {}".format(
+                view.file_name(), supported_brackets))
 
     def on_modified(self, view):
-        pass
+        if view.id() in self.view_listeners:
+            listener = self.view_listeners[view.id()]
+            listener.on_modified()
 
     def on_activated(self, view):
-        if view.settings().has("rainbow_brackets") and view.id() in self.view_listeners:
-            return
-        self.on_load(view)
+        # after SublimeText start-up, views' original settings are kept.
+        if view.settings().has("rainbow") and view.id() not in self.view_listeners:
+            self.on_load(view)
 
     def on_selection_modified(self, view):
-        pass
+        if view.id() in self.view_listeners:
+            listener = self.view_listeners[view.id()]
+            listener.on_selection_modified()
 
     def on_hover(self, view, point, hover_zone):
-        pass
+       if view.id() in self.view_listeners:
+           listener = self.view_listeners[view.id()]
+           listener.on_hover(point, hover_zone)
+
+    def on_close(self, view):
+        if view.id() in self.view_listeners:
+            self.view_listeners.pop(view.id())
+            Debuger.print("close_view, file_name: ", view.file_name())
 
     def on_post_save(self, view):
-        if on_save_debug():
-            self.reload_module(view.file_name())
+        if not (view.settings().has("rainbow") and view.id() in self.view_listeners):
+            self.on_load(view)
 
-    def reload_module(self, path):
+        if Debuger.debug:
+            self.reload_all_modules(view.file_name())
+
+    # Just for test this package conveniently.
+    def reload_all_modules(self, path):
         dir = os.path.dirname(__file__)
         if path.endswith(".py") and path.startswith(dir) and path != __file__:
             start = len(sublime.packages_path())+1
@@ -175,14 +197,12 @@ class RainbowBracketsListener(sublime_plugin.EventListener):
 
 def load_settings(cls):
     def call_back1():
-        if on_save_debug():
-            print("call_back1")
+        Debuger.print("load_settings: call_back1")
         colors = cls.settings.get("brackets_colors", profile.BRACKETS_COLORS)
         cls.color_scheme_writer.update_colors(colors)
 
     def call_back2():
-        if on_save_debug():
-            print("call_back2")
+        Debuger.print("load_settings: call_back2")
         supported_languages = cls.settings.get("supported_languages", {})
         supported_extensions = []
         for lang in supported_languages:
@@ -194,8 +214,7 @@ def load_settings(cls):
         cls.supported_extensions = supported_extensions
 
     def call_back3():
-        if on_save_debug():
-            print("call_back3")
+        Debuger.print("load_settings: call_back3")
         cls.color_scheme = cls.preferences.get("color_scheme")
         cls.color_scheme_writer.update_scheme(cls.color_scheme)
 

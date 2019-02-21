@@ -14,7 +14,13 @@
             }
         },
         "json": {
-            "extensions": ["json", "sublime-settings", "sublime-color-scheme"],
+            "extensions": [
+                "json",
+                "sublime-settings",
+                "sublime-menu",
+                "sublime-keymap",
+                "sublime-color-scheme",
+            ],
             "model": "lineal",
             "brackets": {
                 "[": "]",
@@ -35,6 +41,7 @@
         "#00FF00",
         "#0094FF",
         "#0041FF",
-        "#7D00E5"
+        "#7D00E5",
+        "#000000"
     ]
 }
