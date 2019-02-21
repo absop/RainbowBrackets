@@ -8,6 +8,10 @@ from .plugins import profile
 from .plugins.searcher import BracketsSearcher
 
 
+def on_save_debug():
+    return False
+
+
 class ColorSchemeWriter(object):
     brackets_colors = profile.BRACKETS_COLORS
     colors_loop = len(brackets_colors)
@@ -39,7 +43,8 @@ class ColorSchemeWriter(object):
             for window in sublime.windows():
                 for view in window.views():
                     if view.settings().has("rainbow_brackets"):
-                        # print(view.file_name(), self.color_scheme)
+                        if on_save_debug():
+                            print(view.file_name(), self.color_scheme)
                         view.settings().set("color_scheme", self.color_scheme)
 
         sublime.set_timeout(flush_view, 500)
@@ -83,7 +88,8 @@ class BracketsRender(object):
     def __init__(self, view, brackets):
         self.view = view
         self.searcher = BracketsSearcher(view, brackets)
-        print(brackets)
+        if on_save_debug():
+            print(brackets)
 
     def render(self, region):
         matched_brackets, unmatched_brackets =  self.searcher.get_brackets_by_layer(region)
@@ -129,7 +135,8 @@ class RainbowBracketsListener(sublime_plugin.EventListener):
             view.settings().set("rainbow_brackets", True)
             self.view_listeners[view.id()] = brackets_render
 
-            print("render running: ", view.file_name())
+            if on_save_debug():
+                print("render running: ", view.file_name())
 
     def on_new(self, view):
         pass
@@ -150,29 +157,32 @@ class RainbowBracketsListener(sublime_plugin.EventListener):
         pass
 
     def on_post_save(self, view):
-        def reload_module_if_is_package_file(path):
-            dir = os.path.dirname(__file__)
-            if path.endswith(".py") and path.startswith(dir) and path != __file__:
-                start = len(sublime.packages_path())+1
-                modulename = path[start:-3]
-                if path.endswith("__init__.py"):
-                    modulename = modulename[:-9]
-                modulename = modulename.replace("/", ".")
-                modulename = modulename.replace("\\", ".")
-                sublime_plugin.reload_plugin(modulename)
-                sublime_plugin.reload_plugin("{}.main".format(__package__))
+        if on_save_debug():
+            self.reload_module(view.file_name())
 
-        reload_module_if_is_package_file(view.file_name())
+    def reload_module(self, path):
+        dir = os.path.dirname(__file__)
+        if path.endswith(".py") and path.startswith(dir) and path != __file__:
+            start = len(sublime.packages_path())+1
+            modulename = path[start:-3]
+            if path.endswith("__init__.py"):
+                modulename = modulename[:-9]
+            modulename = modulename.replace("/", ".")
+            modulename = modulename.replace("\\", ".")
+            sublime_plugin.reload_plugin(modulename)
+            sublime_plugin.reload_plugin("{}.main".format(__package__))
 
 
 def load_settings(cls):
     def call_back1():
-        print("call_back1")
+        if on_save_debug():
+            print("call_back1")
         colors = cls.settings.get("brackets_colors", profile.BRACKETS_COLORS)
         cls.color_scheme_writer.update_colors(colors)
 
     def call_back2():
-        print("call_back2")
+        if on_save_debug():
+            print("call_back2")
         supported_languages = cls.settings.get("supported_languages", {})
         supported_extensions = []
         for lang in supported_languages:
@@ -184,7 +194,8 @@ def load_settings(cls):
         cls.supported_extensions = supported_extensions
 
     def call_back3():
-        print("call_back3")
+        if on_save_debug():
+            print("call_back3")
         cls.color_scheme = cls.preferences.get("color_scheme")
         cls.color_scheme_writer.update_scheme(cls.color_scheme)
 
