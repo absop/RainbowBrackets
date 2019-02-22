@@ -3,7 +3,7 @@
     // if you choose all, it will color all brackets
     // if you choose lineal, it will just color those
     // brackets that contains the cursor directly.
-    "supported_languages": {
+    "languages": {
         "scheme": {
             "extensions": ["scm", "ss"],
             "model": "lineal",
