@@ -8,7 +8,7 @@ from . import profile
 
 
 class Debuger:
-    debug = True
+    debug = False
 
     def print(*args):
         if Debuger.debug:
