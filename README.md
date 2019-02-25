@@ -39,7 +39,7 @@ please refer to the original configuration and add your own language
 to the Settings file.
 
 
-## Some screenshot
+## Screenshots
 - Material color scheme, Json
   ![material-color-scheme, Json](/images/material-json.png)
 - Material color scheme, Scheme
