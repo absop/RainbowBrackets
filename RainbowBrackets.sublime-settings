@@ -6,10 +6,12 @@
     //    only highlight brackets near to the cursor point with a threshod.
     //    the color of each bracket depends on the cursor's position.
     //    not applicable to multiple cursor editing.
+
     "languages": {
         "scheme": {
             "extensions": ["scm", "ss"],
-            "mode": "part",
+            "mode": "all",
+            "threshold": 10000,
             "brackets": {
                 "(": ")",
                 "[": "]",
@@ -33,7 +35,6 @@
     },
     "brackets_colors": {
         "matched": [
-            // "#303030",
             "#FF0000",
             "#FF6A00",
             "#FFD800",

@@ -20,7 +20,7 @@ brackets_colors = {
         "#00FF00",
         "#0094FF",
         "#0041FF",
-        "#7D00E5"
+        "#7D00E5",
     ],
     "unmatched": "#FF0000"
 }
