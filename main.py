@@ -215,10 +215,10 @@ class BracketsViewListener(object):
                         left_regions.append(region)
                     # token in self.right_brackets
                     elif left_brackets and token == self.brackets[left_brackets[-1]]:
-                            left_brackets.pop()
-                            layer = len(left_brackets)
-                            matched_brackets.setdefault(layer, []).append(left_regions.pop())
-                            matched_brackets[layer].append(region)
+                        left_brackets.pop()
+                        layer = len(left_brackets)
+                        matched_brackets.setdefault(layer, []).append(left_regions.pop())
+                        matched_brackets[layer].append(region)
                     else:
                         unmatched_brackets.append(region)
         return match_result
@@ -277,10 +277,10 @@ class BracketsViewListener(object):
                         else:
                             unmatched_brackets.append(region)
                     elif lineal_stack and self.brackets[token] == lineal_stack[0][1]:
-                            rt = lineal_stack.pop(0)[0]
-                            lineal_layer += 1
-                            matched_brackets.setdefault(lineal_layer, []).append(rt)
-                            matched_brackets[lineal_layer].append(region)
+                        rt = lineal_stack.pop(0)[0]
+                        lineal_layer += 1
+                        matched_brackets.setdefault(lineal_layer, []).append(rt)
+                        matched_brackets[lineal_layer].append(region)
                     else:
                         unmatched_brackets.append(region)
         return match_result
