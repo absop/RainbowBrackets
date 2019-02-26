@@ -8,17 +8,51 @@ from . import profile
 
 
 class Debuger:
-    debug = False
+    debug = True
 
     def print(*args):
         if Debuger.debug:
             print(*args)
 
+# Provide a additional color_scheme.
+# Simply provide the BGcolor dynamically, so that the BGcolor of
+# the brackets matches the BGcolor of the color scheme being used.
+class ColorSchemeWriter(object):
+    minlayer = 0
+    maxlayer = 0
+    unmatched = {
+        "name": profile.unmatched_key,
+        "scope": profile.unmatched_scope,
+        "foreground": profile.brackets_colors["unmatched"]
+    }
+    matched = []
+    scheme_data = profile.scheme_data
+    fgcolors = profile.brackets_colors["matched"]
+    numcolor = len(fgcolors)
 
-class ColorScheme(object):
     def __init__(self, filename):
-        self.abspath = profile._cache_color_scheme_path(filename, relative=False)
+        self.update_abspath_and_bgcolor(filename)
+        self.update_layer(0, 15)
+
+    def update_abspath_and_bgcolor(self, filename):
+        self.filename = filename
         self.bgcolor = self.nearest_background(filename)
+        self.abspath = profile._cache_color_scheme_path(filename)
+        for rule in self.matched:
+            rule["background"] = self.bgcolor
+
+    def update_scheme(self, filename):
+        def flush_views():
+            Debuger.print("flush_views with color_scheme: ", filename)
+            for window in sublime.windows():
+                for view in window.views():
+                    if view.settings().has("rainbow"):
+                        view.settings().set("color_scheme", filename)
+                        Debuger.print("\tfile: ", view.file_name())
+
+        self.update_abspath_and_bgcolor(filename)
+        self.write_color_scheme("update_scheme")
+        sublime.set_timeout(flush_views, 250)
 
     def background(self, filename):
         view = sublime.active_window().active_view()
@@ -32,72 +66,6 @@ class ColorScheme(object):
         b += 1 - 2 * (b == 255)
         return bgcolor[:-2] + "%02x" % b
 
-
-# Provide a additional color_scheme.
-# Simply provide the BGcolor dynamically, so that the BGcolor of
-# the brackets matches the BGcolor of the color scheme being used.
-class ColorSchemeWriter(object):
-    minlayer = 0
-    maxlayer = 0
-    fgidentfy = 0
-    unmatched = {
-        "name": profile.unmatched_key,
-        "scope": profile.unmatched_scope,
-        "foreground": profile.brackets_colors["unmatched"]
-    }
-    matched = []
-    cached_color_schemes = {}
-    scheme_data = profile.scheme_data
-    fgcolors = profile.brackets_colors["matched"]
-    numcolor = len(fgcolors)
-
-    def __init__(self, filename):
-        self.filename = filename
-        self.color_scheme = ColorScheme(filename)
-        self.update_layer(0, 15)
-
-    def cache_color_scheme(self):
-        self.color_scheme.minlayer = self.minlayer
-        self.color_scheme.maxlayer = self.maxlayer
-        self.color_scheme.fgidentfy = self.fgidentfy
-        self.cached_color_schemes[self.filename] = self.color_scheme
-
-    def update_scheme(self, filename):
-        def flush_views():
-            Debuger.print("flush_views with color_scheme: ", filename)
-            for window in sublime.windows():
-                for view in window.views():
-                    if view.settings().has("rainbow"):
-                        view.settings().set("color_scheme", filename)
-                        Debuger.print("\tfile: ", view.file_name())
-
-        self.cache_color_scheme()
-        self.rewrite_color_scheme(filename)
-        sublime.set_timeout(flush_views, 250)
-        sublime.set_timeout_async(flush_views, 500)
-        sublime.set_timeout_async(flush_views, 750)
-
-    def rewrite_color_scheme(self, filename):
-        if filename in self.cached_color_schemes:
-            color_scheme = self.cached_color_schemes[filename]
-            if (color_scheme.minlayer <= self.minlayer and
-                color_scheme.maxlayer >= self.maxlayer and
-                color_scheme.fgidentfy == self.fgidentfy and
-                os.path.exists(color_scheme.abspath)):
-                return False
-        else:
-            color_scheme = ColorScheme(filename)
-
-        self.filename = filename
-        self.color_scheme = color_scheme
-        self.update_scheme_bgcolor(color_scheme.bgcolor)
-        self.write_color_scheme("rewrite_color_scheme", color_scheme)
-        return True
-
-    def update_scheme_bgcolor(self, bgcolor):
-        for rule in self.matched:
-            rule["background"] = bgcolor
-
     def update_brackets_colors(self, brackets_colors):
         self.fgcolors = brackets_colors["matched"]
         self.numcolor = len(self.fgcolors)
@@ -105,15 +73,14 @@ class ColorSchemeWriter(object):
         for i in range(self.minlayer, self.maxlayer):
             self.matched[i]["foreground"] = self.fgcolors[i % self.numcolor]
 
-        self.fgidentfy += 1
-        self.write_color_scheme("update_brackets_colors", self.color_scheme)
+        self.write_color_scheme("update_brackets_colors")
 
     def rule_dict(self, i):
         return {
             "name": profile._matched_key(i),
             "scope": profile._matched_scopes(i),
             "foreground": self.fgcolors[i % self.numcolor],
-            "background": self.color_scheme.bgcolor
+            "background": self.bgcolor
         }
 
     def update_layer(self, minlayer, maxlayer):
@@ -128,7 +95,7 @@ class ColorSchemeWriter(object):
                 self.up_layer_to(clp2(maxlayer))
             if minlayer < self.minlayer:
                 self.down_layer_to(-clp2(abs(minlayer)))
-            self.write_color_scheme("update_layer", self.color_scheme)
+            self.write_color_scheme("update_layer")
 
     def up_layer_to(self, maxlayer):
         Debuger.print("up layer from:", self.maxlayer, "to:", maxlayer)
@@ -142,12 +109,12 @@ class ColorSchemeWriter(object):
         self.matched = lower + self.matched
         self.minlayer = minlayer
 
-    def write_color_scheme(self, caller, color_scheme):
+    def write_color_scheme(self, caller):
         self.scheme_data["rules"] = self.matched + [self.unmatched]
-        with open(color_scheme.abspath, "w") as file:
+        with open(self.abspath, "w") as file:
             file.write(json.dumps(self.scheme_data))
         Debuger.print("{}: write file: {}, bg: {}".format(
-            caller, color_scheme.abspath, color_scheme.bgcolor))
+            caller, self.abspath, self.bgcolor))
 
 
 class BracketsViewListener(object):

@@ -38,9 +38,9 @@ def _cache_color_scheme_dir(relative=True):
     return os.path.join(branch, leaf).replace("\\", "/")
 
 
-def _cache_color_scheme_path(color_scheme, relative=True):
+def _cache_color_scheme_path(color_scheme):
     extname = "sublime-color-scheme"
-    dirname = _cache_color_scheme_dir(relative)
+    dirname = _cache_color_scheme_dir(relative=False)
     filename = os.path.basename(color_scheme).replace("tmTheme", extname)
     return dirname + "/" + filename
 
