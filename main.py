@@ -8,7 +8,7 @@ from . import profile
 
 
 class Debuger:
-    debug = True
+    debug = False
 
     def print(*args):
         if Debuger.debug:
@@ -126,9 +126,17 @@ class BracketsViewListener(object):
         self.mode = mode
         self.minlayer = 0
         self.maxlayer = 0
+        self.brackets = {}
         self.language = language
-        self.brackets = brackets
         self.threshold = threshold
+        self.configure_brackets(brackets)
+
+    def configure_brackets(self, brackets):
+        self.left_brackets = sorted(brackets)
+        self.right_brackets = [brackets[k] for k in self.left_brackets]
+        for i in range(len(self.left_brackets)):
+            self.brackets[self.left_brackets[i]] = self.right_brackets[i]
+            self.brackets[self.right_brackets[i]] = self.left_brackets[i]
 
     def on_load(self):
         region = sublime.Region(0, self.view.size())
@@ -186,7 +194,8 @@ class BracketsViewListener(object):
 
     def get_all_brackets(self, region):
         tokens_with_scopes = self.view.extract_tokens_with_scopes(region)
-        brackets, regions = [], []
+        left_brackets = []
+        left_regions = []
         matched_brackets = {}
         unmatched_brackets = []
         match_result = (matched_brackets, unmatched_brackets)
@@ -195,22 +204,22 @@ class BracketsViewListener(object):
             end = tokens_with_scopes[-1][0].b
             contents = self.view.substr(sublime.Region(begin, end))
             for region, scope in tokens_with_scopes:
-                # skip ignore
-                if "comment" in scope or "string" in scope:
-                    continue
                 token = contents[region.a - begin:region.b - begin]
                 if token in self.brackets:
-                    brackets.append(token)
-                    regions.append(region)
+                    # skip ignore
+                    if "comment" in scope or "string" in scope:
+                        continue
 
-                elif brackets:
-                    if token == self.brackets[brackets[-1]]:
-                        brackets.pop()
-                        layer = len(brackets)
-                        matched_brackets.setdefault(layer, []).append(regions.pop())
-                        matched_brackets[layer].append(region)
-
-                    elif token in self.brackets.values():
+                    if token in self.left_brackets:
+                        left_brackets.append(token)
+                        left_regions.append(region)
+                    # token in self.right_brackets
+                    elif left_brackets and token == self.brackets[left_brackets[-1]]:
+                            left_brackets.pop()
+                            layer = len(left_brackets)
+                            matched_brackets.setdefault(layer, []).append(left_regions.pop())
+                            matched_brackets[layer].append(region)
+                    else:
                         unmatched_brackets.append(region)
         return match_result
 
@@ -228,25 +237,23 @@ class BracketsViewListener(object):
             begin = (ltokens if ltokens else rtokens)[0][0].a
             end = rtokens[-1][0].b
             lineal_stack, branch_stack = [], []
-            rbrackrts = set(self.brackets.values())
             contents = self.view.substr(sublime.Region(begin, end))
             ltokens.reverse()
             for region, scope in ltokens:
-                # skip ignore
-                if "comment" in scope or "string" in scope:
-                    continue
                 token = contents[region.a - begin:region.b - begin]
-                if token in rbrackrts:
-                    # 0: region, 1: brackets char
-                    branch_stack.append((region, token))
-                elif token in self.brackets:
-                    if branch_stack:
+                if token in self.brackets:
+                    # skip ignore
+                    if "comment" in scope or "string" in scope:
+                        continue
+
+                    if token in self.right_brackets:
+                        branch_stack.append((region, token))
+                    elif branch_stack:
                         if self.brackets[token] == branch_stack[-1][1]:
                             layer = len(lineal_stack) - len(branch_stack)
-                            r = branch_stack.pop()[0]
+                            right = branch_stack.pop()[0]
                             matched_brackets.setdefault(layer, []).append(region)
-                            matched_brackets[layer].append(r)
-                        # unmatched brackets
+                            matched_brackets[layer].append(right)
                         else:
                             unmatched_brackets.append(region)
                     else:
@@ -254,23 +261,22 @@ class BracketsViewListener(object):
 
             branch_stack, lineal_layer = [], -1
             for region, scope in rtokens:
-                if "comment" in scope or "string" in scope:
-                    continue
                 token = contents[region.a - begin:region.b - begin]
                 if token in self.brackets:
-                    branch_stack.append((region, token))
+                    if "comment" in scope or "string" in scope:
+                        continue
 
-                elif token in rbrackrts:
-                    if branch_stack:
-                        if self.brackets[branch_stack[-1][1]] == token:
-                            l = branch_stack.pop()[0]
+                    if token in self.left_brackets:
+                        branch_stack.append((region, token))
+                    elif branch_stack:
+                        if self.brackets[token] == branch_stack[-1][1]:
+                            left = branch_stack.pop()[0]
                             layer =  lineal_layer - len(branch_stack)
-                            matched_brackets.setdefault(layer, []).append(l)
+                            matched_brackets.setdefault(layer, []).append(left)
                             matched_brackets[layer].append(region)
                         else:
                             unmatched_brackets.append(region)
-                    elif lineal_stack:
-                        if self.brackets[lineal_stack[0][1]] == token:
+                    elif lineal_stack and self.brackets[token] == lineal_stack[0][1]:
                             rt = lineal_stack.pop(0)[0]
                             lineal_layer += 1
                             matched_brackets.setdefault(lineal_layer, []).append(rt)
