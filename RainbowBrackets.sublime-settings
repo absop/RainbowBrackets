@@ -23,6 +23,7 @@
                 "json",
                 "sublime-settings",
                 "sublime-menu",
+                "sublime-build",
                 "sublime-keymap",
                 "sublime-color-scheme"
             ],
