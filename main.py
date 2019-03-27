@@ -78,7 +78,7 @@ class ColorSchemeWriter(object):
     def rule_dict(self, i):
         return {
             "name": profile._matched_key(i),
-            "scope": profile._matched_scopes(i),
+            "scope": profile._matched_scope(i),
             "foreground": self.fgcolors[i % self.numcolor],
             "background": self.bgcolor
         }
@@ -158,7 +158,7 @@ class BracketsViewListener(object):
             for layer in sorted(matched):
                 key = profile._matched_key(layer)
                 self.view.add_regions(key, matched[layer],
-                    scope=profile._matched_scopes(layer),
+                    scope=profile._matched_scope(layer),
                     flags=sublime.DRAW_NO_OUTLINE)
             self.minlayer = minlayer = min(matched)
             self.maxlayer = maxlayer = max(matched)
@@ -184,7 +184,7 @@ class BracketsViewListener(object):
             for layer in sorted(matched):
                 key = profile._matched_key(layer)
                 self.view.add_regions(key, matched[layer],
-                    scope=profile._matched_scopes(layer),
+                    scope=profile._matched_scope(layer),
                     flags=sublime.DRAW_NO_OUTLINE)
 
         self.view.erase_regions(profile.unmatched_key)

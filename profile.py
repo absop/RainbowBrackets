@@ -28,12 +28,12 @@ brackets_colors = {
 def _matched_key(i):
     return "Brackets Matched L{}".format(i)
 
-def _matched_scopes(i):
+def _matched_scope(i):
     return "brackets.matched.l{}".format(i)
 
 
 def _cache_color_scheme_dir(relative=True):
-    leaf = "User/{}/Color Schemes".format(__package__)
+    leaf = "User/Color Schemes/{}".format(__package__)
     branch = "Packages" if relative else sublime.packages_path()
     return os.path.join(branch, leaf).replace("\\", "/")
 
