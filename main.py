@@ -94,6 +94,7 @@ class RainbowViewListener(object):
                 flags=sublime.DRAW_NO_OUTLINE)
 
     def add_regions(self, matched, unmatched):
+        self.clear_all()
         if matched:
             region_buckets = self.serialize_regions(matched, 0)
             self.add_regions_with_level(region_buckets)
