@@ -3,11 +3,11 @@ import sublime
 
 
 scheme_data = {
-   "name": "Rainbow Brackets",
-   "author": "https://github.com/absop",
-   "variables": {},
-   "globals": {},
-   "rules": []
+    "name": "Rainbow Brackets",
+    "author": "https://github.com/absop",
+    "variables": {},
+    "globals": {},
+    "rules": []
 }
 
 
