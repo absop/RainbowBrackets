@@ -35,59 +35,10 @@ class RainbowTinctViewCommand(RainbowCommand):
         RainbowViewsManager.tinct_view(self.view)
 
 
-
 class RainbowClearViewCommand(RainbowCommand):
     def run(self, edit):
         self.log_command()
         RainbowViewsManager.clear_view(self.view)
-
-
-# Provide a additional color_scheme.
-# Simply provide the BGcolor dynamically, so that the BGcolor of
-# the brackets matches the BGcolor of the color scheme being used.
-class ColorSchemeWriter(object):
-    def __init__(self, color_scheme):
-        self.write_with_abspath(color_scheme)
-
-    def write_with_abspath(self, color_scheme):
-        self.abspath = profile._cache_color_scheme_path(color_scheme)
-        self.bgcolor = self.nearest_background(color_scheme)
-        self.write_color_scheme()
-
-    def update_rainbow_colors(self):
-        self.write_color_scheme()
-
-    def nearest_background(self, color_scheme):
-        view = sublime.active_window().active_view()
-        view.settings().set("color_scheme", color_scheme)
-        bgcolor = view.style()["background"]
-
-        b = int(bgcolor[5:7], 16)
-        b += 1 - 2 * (b == 255)
-        return bgcolor[:-2] + "%02x" % b
-
-    def write_color_scheme(self):
-        rainbow_colors = RainbowViewsManager.rainbow_colors
-        matched_color = rainbow_colors["matched"]
-        unmatched_color = rainbow_colors["unmatched"]
-        bgcolor, rules = self.bgcolor, []
-        for no in range(RainbowViewsManager.color_number):
-            color_no, color = str(no), matched_color[no]
-            rules.append({
-                "name": "rainbow_color_matched_no_" + color_no,
-                "scope": color_no + ".matched.color.rainbow",
-                "foreground": color,
-                "background": bgcolor
-            })
-        rules.append({
-            "name": "rainbow_color_unmatched",
-            "scope": "unmatched.color.rainbow",
-            "foreground": unmatched_color,
-            "background": bgcolor
-        })
-        profile.scheme_data["rules"] = rules
-        with open(self.abspath, "w") as file:
-            file.write(json.dumps(profile.scheme_data))
 
 
 class RainbowViewListener(object):
@@ -319,6 +270,11 @@ class RainbowViewsManager(sublime_plugin.EventListener):
             cls.tincted_views.pop(view.id())
             cls.ignored_views.append(view.id())
 
+    @classmethod
+    def clear_all(cls):
+        for view_listener in cls.tincted_views.values():
+            view_listener.clear_all()
+
     def on_load(self, view):
         RainbowViewsManager._load_view(view)
 
@@ -341,6 +297,43 @@ class RainbowViewsManager(sublime_plugin.EventListener):
             self.tincted_views.pop(view.id())
 
 
+def nearest_background(color_scheme):
+    view = sublime.active_window().active_view()
+    view.settings().set("color_scheme", color_scheme)
+    bgcolor = view.style()["background"]
+
+    b = int(bgcolor[5:7], 16)
+    b += 1 - 2 * (b == 255)
+    return bgcolor[:-2] + "%02x" % b
+
+
+def write_color_scheme(color_scheme, rainbow_colors):
+    abspath = profile._cache_color_scheme_path(color_scheme)
+    bgcolor = nearest_background(color_scheme)
+
+    matched_color = rainbow_colors["matched"]
+    unmatched_color = rainbow_colors["unmatched"]
+    scheme_rules = []
+
+    for no in range(RainbowViewsManager.color_number):
+        color_no, color = str(no), matched_color[no]
+        scheme_rules.append({
+            "name": "rainbow_color_matched_no_" + color_no,
+            "scope": color_no + ".matched.color.rainbow",
+            "foreground": color,
+            "background": bgcolor
+        })
+    scheme_rules.append({
+        "name": "rainbow_color_unmatched",
+        "scope": "unmatched.color.rainbow",
+        "foreground": unmatched_color,
+        "background": bgcolor
+    })
+    profile.scheme_data["rules"] = scheme_rules
+    with open(abspath, "w") as file:
+        file.write(json.dumps(profile.scheme_data))
+
+
 def load_settings(cls):
     def _load_settings():
         cls.maxsize = settings.get("maxsize", {})
@@ -354,22 +347,29 @@ def load_settings(cls):
             config["mode"] = int(config["mode"] == "part")
             cls.languages[lang.lower()] = cls.languages.pop(lang)
 
-        _load_color_scheme()
-
-    def _load_color_scheme():
         color_scheme = preferences.get("color_scheme", CS_DEFAULT)
-        cls.cswriter = ColorSchemeWriter(color_scheme)
         cls.color_scheme = color_scheme
+        write_color_scheme(color_scheme, cls.rainbow_colors)
+
+    def _update_color_scheme():
+        color_scheme = preferences.get("color_scheme", CS_DEFAULT)
+        if cls.color_scheme != color_scheme:
+            write_color_scheme(color_scheme, cls.rainbow_colors)
 
     settings = profile._load_settings(pref=False)
     preferences = profile._load_settings(pref=True)
 
     _load_settings()
 
-    preferences.add_on_change("color_scheme", _load_color_scheme)
     settings.add_on_change("rainbow_colors", _load_settings)
+    preferences.add_on_change("color_scheme", _update_color_scheme)
 
 
 def plugin_loaded():
     os.makedirs(profile._cache_color_scheme_dir(relative=False), exist_ok=True)
     load_settings(RainbowViewsManager)
+    view = sublime.active_window().active_view()
+    sublime.set_timeout(lambda: RainbowViewsManager._load_view(view), 500)
+
+def plugin_unloaded():
+    RainbowViewsManager.clear_all()
