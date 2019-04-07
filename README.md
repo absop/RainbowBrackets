@@ -41,8 +41,8 @@ to the Settings file.
 
 ## Screenshots
 - Material color scheme, Json
-  ![material-color-scheme, Json](https://github.com/absop/RainbowBrackets/images/material-json.png)
+  ![material-color-scheme, Json](https://github.com/absop/RainbowBrackets/blob/master/images/material-json.png)
 - Material color scheme, Scheme
-  ![material-color-scheme, Scheme](https://github.com/absop/RainbowBrackets/images/material.png)
+  ![material-color-scheme, Scheme](https://github.com/absop/RainbowBrackets/blob/master/images/material.png)
 - Material-lighter, Scheme
-  ![material-lighter-color-scheme, Scheme](https://github.com/absop/RainbowBrackets/images/material-lighter.png)
+  ![material-lighter-color-scheme, Scheme](https://github.com/absop/RainbowBrackets/blob/master/images/material-lighter.png)
