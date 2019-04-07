@@ -2,34 +2,18 @@ import os
 import sublime
 
 
-unmatched_key = "Brackets Unmatched"
-unmatched_scope = "brackets.unmatched"
 scheme_data = {
-       "name": "Rainbow Brackets",
-       "author": "https://github.com/absop",
-       "variables": {},
-       "globals": {},
-       "rules": []
-    }
-
-brackets_colors = {
-    "matched": [
-        "#FF0000",
-        "#FF6A00",
-        "#FFD800",
-        "#00FF00",
-        "#0094FF",
-        "#0041FF",
-        "#7D00E5",
-    ],
-    "unmatched": "#FF0000"
+   "name": "Rainbow Brackets",
+   "author": "https://github.com/absop",
+   "variables": {},
+   "globals": {},
+   "rules": []
 }
 
-def _matched_key(i):
-    return "Brackets Matched L{}".format(i)
 
-def _matched_scope(i):
-    return "brackets.matched.l{}".format(i)
+RAINBOW_MODE_ALL = 0
+RAINBOW_MODE_PART = 1
+DEFAULT_MODE = RAINBOW_MODE_ALL
 
 
 def _cache_color_scheme_dir(relative=True):

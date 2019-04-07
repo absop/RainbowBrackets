@@ -1,0 +1,22 @@
+[
+    {
+        "caption": "Preferences: RainbowBrackets Settings",
+        "command": "edit_settings",
+        "args": {
+          "base_file": "${packages}/RainbowBrackets/RainbowBrackets.sublime-settings",
+          "default": "/*\n\tRainbowBrackets user settings in here override the default\n*/\n{\n\t$0\n}\n"
+          }
+    },
+    {
+        "caption": "RainbowBrackets: tinct view",
+        "command": "rainbow_tinct_view",
+    },
+    {
+        "caption": "RainbowBrackets: clear view",
+        "command": "rainbow_clear_view",
+    },
+    {
+        "caption": "RainbowBrackets: toggle log",
+        "command": "rainbow_toggle_log",
+    }
+]

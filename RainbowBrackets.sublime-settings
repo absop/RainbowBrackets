@@ -7,16 +7,18 @@
     //    the color of each bracket depends on the cursor's position.
     //    not applicable to multiple cursor editing.
 
+    "maxsize": 100000, // for part mode.
+
+    "brackets": {
+        "(": ")",
+        "[": "]",
+        "{": "}"
+    },
+
     "languages": {
         "scheme": {
             "extensions": ["scm", "ss"],
             "mode": "all",
-            "threshold": 10000,
-            "brackets": {
-                "(": ")",
-                "[": "]",
-                "{": "}"
-            }
         },
         "json": {
             "extensions": [
@@ -28,13 +30,10 @@
                 "sublime-color-scheme"
             ],
             "mode": "all",
-            "brackets": {
-                "[": "]",
-                "{": "}"
-            }
+            "!brackets": ["("],
         }
     },
-    "brackets_colors": {
+    "rainbow_colors": {
         "matched": [
             "#FF0000",
             "#FF6A00",

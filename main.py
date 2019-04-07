@@ -7,190 +7,159 @@ import sublime_plugin
 from . import profile
 
 
-class Debuger:
+CS_DEFAULT = "Monokai.sublime-color-scheme"
+
+
+class Loger:
     debug = False
 
     def print(*args):
-        if Debuger.debug:
-            print(*args)
+        if Loger.debug:
+            print("[Rainbow Brackets:]", *args)
+
+
+class RainbowToggleLogCommand(sublime_plugin.TextCommand):
+    def run(self, edit):
+        Loger.debug = not Loger.debug
+
+
+class RainbowCommand(sublime_plugin.TextCommand):
+    def log_command(self):
+        filename = self.view.file_name() or "untitled"
+        Loger.print("{}:".format(self.name()), filename)
+
+
+class RainbowTinctViewCommand(RainbowCommand):
+    def run(self, edit):
+        self.log_command()
+        RainbowViewsManager.tinct_view(self.view)
+
+
+
+class RainbowClearViewCommand(RainbowCommand):
+    def run(self, edit):
+        self.log_command()
+        RainbowViewsManager.clear_view(self.view)
+
 
 # Provide a additional color_scheme.
 # Simply provide the BGcolor dynamically, so that the BGcolor of
 # the brackets matches the BGcolor of the color scheme being used.
 class ColorSchemeWriter(object):
-    minlayer = 0
-    maxlayer = 0
-    unmatched = {
-        "name": profile.unmatched_key,
-        "scope": profile.unmatched_scope,
-        "foreground": profile.brackets_colors["unmatched"]
-    }
-    matched = []
-    scheme_data = profile.scheme_data
-    fgcolors = profile.brackets_colors["matched"]
-    numcolor = len(fgcolors)
+    def __init__(self, color_scheme):
+        self.write_with_abspath(color_scheme)
 
-    def __init__(self, filename):
-        self.update_abspath_and_bgcolor(filename)
-        self.update_layer(0, 15)
+    def write_with_abspath(self, color_scheme):
+        self.abspath = profile._cache_color_scheme_path(color_scheme)
+        self.bgcolor = self.nearest_background(color_scheme)
+        self.write_color_scheme()
 
-    def update_abspath_and_bgcolor(self, filename):
-        self.filename = filename
-        self.bgcolor = self.nearest_background(filename)
-        self.abspath = profile._cache_color_scheme_path(filename)
-        for rule in self.matched:
-            rule["background"] = self.bgcolor
+    def update_rainbow_colors(self):
+        self.write_color_scheme()
 
-    def update_scheme(self, filename):
-        def flush_views():
-            Debuger.print("flush_views with color_scheme: ", filename)
-            for window in sublime.windows():
-                for view in window.views():
-                    if view.settings().has("rainbow"):
-                        view.settings().set("color_scheme", filename)
-                        Debuger.print("\tfile: ", view.file_name())
-
-        self.update_abspath_and_bgcolor(filename)
-        self.write_color_scheme("update_scheme")
-        sublime.set_timeout(flush_views, 250)
-
-    def background(self, filename):
+    def nearest_background(self, color_scheme):
         view = sublime.active_window().active_view()
-        view.settings().set("color_scheme", filename)
+        view.settings().set("color_scheme", color_scheme)
         bgcolor = view.style()["background"]
-        return bgcolor
 
-    def nearest_background(self, filename):
-        bgcolor = self.background(filename)
         b = int(bgcolor[5:7], 16)
         b += 1 - 2 * (b == 255)
         return bgcolor[:-2] + "%02x" % b
 
-    def update_brackets_colors(self, brackets_colors):
-        self.fgcolors = brackets_colors["matched"]
-        self.numcolor = len(self.fgcolors)
-        self.unmatched["foreground"] = brackets_colors["unmatched"]
-        for i in range(self.minlayer, self.maxlayer):
-            self.matched[i]["foreground"] = self.fgcolors[i % self.numcolor]
-
-        self.write_color_scheme("update_brackets_colors")
-
-    def rule_dict(self, i):
-        return {
-            "name": profile._matched_key(i),
-            "scope": profile._matched_scope(i),
-            "foreground": self.fgcolors[i % self.numcolor],
-            "background": self.bgcolor
-        }
-
-    def update_layer(self, minlayer, maxlayer):
-        # for n less than 2^16
-        def clp2(number):
-            for i in (1, 2, 4, 8):
-                number |= number >> i
-            return number + 1
-
-        if maxlayer > self.maxlayer or minlayer < self.minlayer:
-            if maxlayer > self.maxlayer:
-                self.up_layer_to(clp2(maxlayer))
-            if minlayer < self.minlayer:
-                self.down_layer_to(-clp2(abs(minlayer)))
-            self.write_color_scheme("update_layer")
-
-    def up_layer_to(self, maxlayer):
-        Debuger.print("up layer from:", self.maxlayer, "to:", maxlayer)
-        higher = [self.rule_dict(i) for i in range(self.maxlayer, maxlayer)]
-        self.matched = self.matched + higher
-        self.maxlayer = maxlayer
-
-    def down_layer_to(self, minlayer):
-        Debuger.print("down layer from:", self.minlayer, "to:", minlayer)
-        lower = [self.rule_dict(i) for i in range(minlayer, self.minlayer)]
-        self.matched = lower + self.matched
-        self.minlayer = minlayer
-
-    def write_color_scheme(self, caller):
-        self.scheme_data["rules"] = self.matched + [self.unmatched]
+    def write_color_scheme(self):
+        rainbow_colors = RainbowViewsManager.rainbow_colors
+        matched_color = rainbow_colors["matched"]
+        unmatched_color = rainbow_colors["unmatched"]
+        bgcolor, rules = self.bgcolor, []
+        for no in range(RainbowViewsManager.color_number):
+            color_no, color = str(no), matched_color[no]
+            rules.append({
+                "name": "rainbow_color_matched_no_" + color_no,
+                "scope": color_no + ".matched.color.rainbow",
+                "foreground": color,
+                "background": bgcolor
+            })
+        rules.append({
+            "name": "rainbow_color_unmatched",
+            "scope": "unmatched.color.rainbow",
+            "foreground": unmatched_color,
+            "background": bgcolor
+        })
+        profile.scheme_data["rules"] = rules
         with open(self.abspath, "w") as file:
-            file.write(json.dumps(self.scheme_data))
-        Debuger.print("{}: write file: {}, bg: {}".format(
-            caller, self.abspath, self.bgcolor))
+            file.write(json.dumps(profile.scheme_data))
 
 
-class BracketsViewListener(object):
-    MODE_ALL = 0    # Highlight all brackets.
-    MODE_PART = 1   # Only highlight brackets near to the cursor.
-
-    def __init__(self, view, language, brackets, threshold, mode=0):
+class RainbowViewListener(object):
+    def __init__(self, view, brackets, mode=0):
         self.view = view
         self.mode = mode
-        self.minlayer = 0
-        self.maxlayer = 0
         self.brackets = {}
-        self.language = language
-        self.threshold = threshold
-        self.configure_brackets(brackets)
 
-    def configure_brackets(self, brackets):
         self.left_brackets = sorted(brackets)
         self.right_brackets = [brackets[k] for k in self.left_brackets]
         for i in range(len(self.left_brackets)):
             self.brackets[self.left_brackets[i]] = self.right_brackets[i]
             self.brackets[self.right_brackets[i]] = self.left_brackets[i]
 
+    def clear_all(self):
+        for no in range(RainbowViewsManager.color_number):
+            key = "rainbow_color_matched_no_" + str(no)
+            self.view.erase_regions(key)
+        self.view.erase_regions("rainbow_color_unmatched")
+
     def on_load(self):
         region = sublime.Region(0, self.view.size())
-        self.add_all_brackets(region)
+        self.tinct_within_region(region)
 
     def on_modified(self):
-        if self.mode == self.MODE_ALL:
+        if self.mode == profile.RAINBOW_MODE_ALL:
             self.on_load()
         else:
-            self.rainbow_with_point(self.view.sel()[0].a)
+            self.tinct_near_point(self.view.sel()[0].a)
 
     def on_selection_modified(self):
-        if self.mode == self.MODE_PART:
-            self.rainbow_with_point(self.view.sel()[0].a)
+        if self.mode == profile.RAINBOW_MODE_PART:
+            self.tinct_near_point(self.view.sel()[0].a)
 
-    def add_all_brackets(self, region):
-        matched, unmatched =  self.get_all_brackets(region)
+    def serialize_regions(self, matched_regions, no):
+        bucket_len = RainbowViewsManager.color_number
+        region_buckets = [[] for i in range(bucket_len)]
+        for level in matched_regions:
+            bucket_no = level % bucket_len
+            regions = matched_regions[level]
+            region_buckets[bucket_no].extend(regions)
+
+        return region_buckets
+
+    def add_regions_with_level(self, region_buckets):
+        for no in range(len(region_buckets)):
+            color_no = str(no)
+            key = "rainbow_color_matched_no_" + color_no
+            scope = color_no + ".matched.color.rainbow"
+            regions = region_buckets[no]
+            self.view.add_regions(key, regions,
+                scope=scope,
+                flags=sublime.DRAW_NO_OUTLINE)
+
+    def add_regions(self, matched, unmatched):
         if matched:
-            for layer in sorted(matched):
-                key = profile._matched_key(layer)
-                self.view.add_regions(key, matched[layer],
-                    scope=profile._matched_scope(layer),
-                    flags=sublime.DRAW_NO_OUTLINE)
-            self.minlayer = minlayer = min(matched)
-            self.maxlayer = maxlayer = max(matched)
-            RainbowBracketsListener.color_scheme_writer.update_layer(minlayer, maxlayer)
+            region_buckets = self.serialize_regions(matched, 0)
+            self.add_regions_with_level(region_buckets)
+
         if unmatched:
-            self.view.add_regions(profile.unmatched_key, unmatched,
-                scope=profile.unmatched_scope,
+            key = "rainbow_color_unmatched"
+            self.view.add_regions(key, unmatched,
+                scope="unmatched.color.rainbow",
                 flags=sublime.DRAW_NO_FILL)
 
-    def rainbow_with_point(self, point):
+    def tinct_within_region(self, region):
+        matched, unmatched =  self.get_all_brackets(region)
+        self.add_regions(matched, unmatched)
+
+    def tinct_near_point(self, point):
         matched, unmatched = self.get_nearest_brackets(point)
-        self.update_regions(matched, unmatched)
-        RainbowBracketsListener.color_scheme_writer.update_layer(self.minlayer, self.minlayer)
-
-    def update_regions(self, matched, unmatched):
-        if matched:
-            for layer in range(self.minlayer, self.maxlayer + 1):
-                key = profile._matched_key(layer)
-                self.view.erase_regions(key)
-            self.minlayer = min(matched)
-            self.maxlayer = max(matched)
-
-            for layer in sorted(matched):
-                key = profile._matched_key(layer)
-                self.view.add_regions(key, matched[layer],
-                    scope=profile._matched_scope(layer),
-                    flags=sublime.DRAW_NO_OUTLINE)
-
-        self.view.erase_regions(profile.unmatched_key)
-        self.view.add_regions(profile.unmatched_key, unmatched,
-            scope=profile.unmatched_scope,
-            flags=sublime.DRAW_NO_FILL)
+        self.add_regions(matched, unmatched)
 
     def get_all_brackets(self, region):
         tokens_with_scopes = self.view.extract_tokens_with_scopes(region)
@@ -216,18 +185,20 @@ class BracketsViewListener(object):
                     # token in self.right_brackets
                     elif left_brackets and token == self.brackets[left_brackets[-1]]:
                         left_brackets.pop()
-                        layer = len(left_brackets)
-                        matched_brackets.setdefault(layer, []).append(left_regions.pop())
-                        matched_brackets[layer].append(region)
+                        level = len(left_brackets)
+                        matched_brackets.setdefault(level, []).append(left_regions.pop())
+                        matched_brackets[level].append(region)
                     else:
                         unmatched_brackets.append(region)
         return match_result
 
     def get_nearest_brackets(self, point):
-        begin = max(point - self.threshold//2, 0)
-        end = min(begin + self.threshold, self.view.size())
-        ltokens = self.view.extract_tokens_with_scopes(sublime.Region(begin, point))
-        rtokens = self.view.extract_tokens_with_scopes(sublime.Region(point, end))
+        begin = max(point - RainbowViewsManager.maxsize//2, 0)
+        end = min(begin + RainbowViewsManager.maxsize, self.view.size())
+        left_region = sublime.Region(begin, point)
+        right_region = sublime.Region(point, end)
+        ltokens = self.view.extract_tokens_with_scopes(left_region)
+        rtokens = self.view.extract_tokens_with_scopes(right_region)
         matched_brackets = {}
         unmatched_brackets = []
         match_result = (matched_brackets, unmatched_brackets)
@@ -250,16 +221,16 @@ class BracketsViewListener(object):
                         branch_stack.append((region, token))
                     elif branch_stack:
                         if self.brackets[token] == branch_stack[-1][1]:
-                            layer = len(lineal_stack) - len(branch_stack)
+                            level = len(lineal_stack) - len(branch_stack)
                             right = branch_stack.pop()[0]
-                            matched_brackets.setdefault(layer, []).append(region)
-                            matched_brackets[layer].append(right)
+                            matched_brackets.setdefault(level, []).append(region)
+                            matched_brackets[level].append(right)
                         else:
                             unmatched_brackets.append(region)
                     else:
                         lineal_stack.append((region, token))
 
-            branch_stack, lineal_layer = [], -1
+            branch_stack, lineal_level = [], -1
             for region, scope in rtokens:
                 token = contents[region.a - begin:region.b - begin]
                 if token in self.brackets:
@@ -271,130 +242,134 @@ class BracketsViewListener(object):
                     elif branch_stack:
                         if self.brackets[token] == branch_stack[-1][1]:
                             left = branch_stack.pop()[0]
-                            layer =  lineal_layer - len(branch_stack)
-                            matched_brackets.setdefault(layer, []).append(left)
-                            matched_brackets[layer].append(region)
+                            level =  lineal_level - len(branch_stack)
+                            matched_brackets.setdefault(level, []).append(left)
+                            matched_brackets[level].append(region)
                         else:
                             unmatched_brackets.append(region)
                     elif lineal_stack and self.brackets[token] == lineal_stack[0][1]:
                         rt = lineal_stack.pop(0)[0]
-                        lineal_layer += 1
-                        matched_brackets.setdefault(lineal_layer, []).append(rt)
-                        matched_brackets[lineal_layer].append(region)
+                        lineal_level += 1
+                        matched_brackets.setdefault(lineal_level, []).append(rt)
+                        matched_brackets[lineal_level].append(region)
                     else:
                         unmatched_brackets.append(region)
         return match_result
 
 
-class RainbowBracketsListener(sublime_plugin.EventListener):
-    view_listeners = {}
+class RainbowViewsManager(sublime_plugin.EventListener):
+    tincted_views = {}
+    ignored_views = []
 
-    def configure_for_view(self, view):
-        # return: (language name, language config)
-        language = extensions = None
-        syntax = view.settings().get("syntax", None)
-        if view.file_name() and os.path.splitext(view.file_name())[1]:
-            extensions = os.path.splitext(view.file_name())[1].lstrip(".")
-        if syntax is not None:
-            syntax = os.path.basename(syntax).lower()
-            language, _ = os.path.splitext(syntax)
-        if language not in self.languages:
-            for lang, config in self.languages.items():
-                if extensions in config["extensions"]:
-                    return (lang, self.languages.get(lang, {}))
-        return (language, self.languages.get(language, {}))
+    @classmethod
+    def _tinct_view(cls, view, brackets, mode):
+        if not brackets:
+            Loger.print("Not work in current file because no brackets was added!")
+            return
+        view_listener = RainbowViewListener(view, brackets, mode)
+        view_listener.on_load()
+        cls.tincted_views[view.id()] = view_listener
+        mode = "all" if mode == profile.RAINBOW_MODE_ALL else "part"
+        Loger.print("_tinct_view:\n\tfile: {}\n\tbrackets: {}\n\tmode: {}".format(
+            view.file_name(), brackets, mode))
+
+    @classmethod
+    def _load_view(cls, view):
+        def get_config_for_view():
+            syntax = view.settings().get("syntax", None)
+            if syntax is not None:
+                syntax = os.path.basename(syntax).lower()
+                lang, ext = os.path.splitext(syntax)
+                if lang in cls.languages:
+                    return cls.languages[lang]
+            if view.file_name():
+                ext = os.path.splitext(view.file_name())[1].lstrip(".")
+                for lang in cls.languages:
+                    config = cls.languages[lang]
+                    if ext in config.get("extensions", []):
+                        return config
+            return None
+
+        if view.id() in cls.ignored_views:
+            return
+
+        config = get_config_for_view()
+        if config is not None:
+            non_brackets = config.get("!brackets", [])
+            brackets = {b: cls.brackets[b] for b in cls.brackets if b not in non_brackets}
+            mode = config.get("mode", profile.DEFAULT_MODE)
+            cls._tinct_view(view, brackets, mode)
+
+    @classmethod
+    def tinct_view(cls, view):
+        if view.id() in cls.ignored_views:
+            cls.ignored_views.remove(view.id())
+
+        if view.id() not in cls.tincted_views:
+            cls._load_view(view)
+        if view.id() not in cls.tincted_views:
+            mode = profile.DEFAULT_MODE
+            cls._tinct_view(view, cls.brackets, mode)
+
+    @classmethod
+    def clear_view(cls, view):
+        if view.id() in cls.tincted_views:
+            view_listener = cls.tincted_views[view.id()]
+            view_listener.clear_all()
+            cls.tincted_views.pop(view.id())
+            cls.ignored_views.append(view.id())
 
     def on_load(self, view):
-        language, config = self.configure_for_view(view)
-        if config and config["brackets"]:
-            mode = config["mode"]
-            brackets = config["brackets"]
-            threshold = config.get("threshold", 20000)
-            Debuger.print("on_load: file: {}, brackets: {}".format(
-                view.file_name(), brackets))
-
-            listener = BracketsViewListener(view, language, brackets, threshold, mode)
-            listener.on_load()
-            view.settings().set("color_scheme", self.filename)
-            view.settings().set("rainbow", True)
-            self.view_listeners[view.id()] = listener
+        RainbowViewsManager._load_view(view)
 
     def on_modified(self, view):
-        if view.id() in self.view_listeners:
-            listener = self.view_listeners[view.id()]
-            listener.on_modified()
+        if view.id() in self.tincted_views:
+            view_listener = self.tincted_views[view.id()]
+            view_listener.on_modified()
 
     def on_activated(self, view):
-        # after SublimeText start-up, views' original settings are kept.
-        if view.settings().has("rainbow") and view.id() not in self.view_listeners:
+        if view.id() not in self.tincted_views:
             self.on_load(view)
 
     def on_selection_modified(self, view):
-        if view.id() in self.view_listeners:
-            listener = self.view_listeners[view.id()]
-            listener.on_selection_modified()
+        if view.id() in self.tincted_views:
+            view_listener = self.tincted_views[view.id()]
+            view_listener.on_selection_modified()
 
     def on_close(self, view):
-        if view.id() in self.view_listeners:
-            self.view_listeners.pop(view.id())
-            Debuger.print("close view: ", view.file_name())
-
-    def on_post_save(self, view):
-        if not (view.settings().has("rainbow") and view.id() in self.view_listeners):
-            self.on_load(view)
-
-        if Debuger.debug:
-            self.reload_all_modules(view.file_name())
-
-    # Just for test this package conveniently.
-    def reload_all_modules(self, path):
-        dir = os.path.dirname(__file__)
-        if path.endswith(".py") and path.startswith(dir) and path != __file__:
-            start = len(sublime.packages_path())+1
-            modulename = path[start:-3]
-            if path.endswith("__init__.py"):
-                modulename = modulename[:-9]
-            modulename = modulename.replace("/", ".")
-            modulename = modulename.replace("\\", ".")
-            sublime_plugin.reload_plugin(modulename)
-            sublime_plugin.reload_plugin("{}.main".format(__package__))
+        if view.id() in self.tincted_views:
+            self.tincted_views.pop(view.id())
 
 
 def load_settings(cls):
-    def load_language_config():
+    def _load_settings():
+        cls.maxsize = settings.get("maxsize", {})
+        cls.brackets = settings.get("brackets", {})
+        cls.rainbow_colors = settings.get("rainbow_colors", {})
+        cls.color_number = len(cls.rainbow_colors["matched"])
+
         cls.languages = settings.get("languages", {})
         for lang, config in cls.languages.items():
             extensions = config.get("extensions", [])
             config["mode"] = int(config["mode"] == "part")
-            config["extensions"] = [e.lstrip(".") for e in extensions]
             cls.languages[lang.lower()] = cls.languages.pop(lang)
 
-    def update_brackets_colors():
-        brackets_colors = settings.get("brackets_colors", profile.brackets_colors)
-        if brackets_colors != cls.brackets_colors:
-            cls.color_scheme_writer.update_brackets_colors(brackets_colors)
-            cls.brackets_colors = brackets_colors
+        _load_color_scheme()
 
-    def update_scheme():
-        filename = preferences.get("color_scheme")
-        if filename != cls.filename:
-            cls.color_scheme_writer.update_scheme(filename)
-            cls.filename = filename
+    def _load_color_scheme():
+        color_scheme = preferences.get("color_scheme", CS_DEFAULT)
+        cls.cswriter = ColorSchemeWriter(color_scheme)
+        cls.color_scheme = color_scheme
 
     settings = profile._load_settings(pref=False)
     preferences = profile._load_settings(pref=True)
-    cls.filename = preferences.get("color_scheme")
-    cls.brackets_colors = profile.brackets_colors
-    cls.color_scheme_writer = ColorSchemeWriter(cls.filename)
 
-    load_language_config()
-    update_brackets_colors()
+    _load_settings()
 
-    settings.add_on_change("brackets_colors", update_brackets_colors)
-    settings.add_on_change("languages", load_language_config)
-    preferences.add_on_change("color_scheme", update_scheme)
+    preferences.add_on_change("color_scheme", _load_color_scheme)
+    settings.add_on_change("rainbow_colors", _load_settings)
 
 
 def plugin_loaded():
     os.makedirs(profile._cache_color_scheme_dir(relative=False), exist_ok=True)
-    load_settings(RainbowBracketsListener)
+    load_settings(RainbowViewsManager)
