@@ -2,6 +2,7 @@ import os
 import sublime
 
 
+plain_text_syntax = "plain text"
 scheme_data = {
     "name": "Rainbow Brackets",
     "author": "https://github.com/absop",

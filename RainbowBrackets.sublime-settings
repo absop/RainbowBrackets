@@ -7,7 +7,7 @@
     //    the color of each bracket depends on the cursor's position.
     //    not applicable to multiple cursor editing.
 
-    "maxsize": 100000, // for part mode.
+    "maxsize": 20000, // for part mode.
 
     "brackets": {
         "(": ")",
