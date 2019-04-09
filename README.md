@@ -2,47 +2,63 @@
 
 
 ## Introduction
-This is a plugin I wrote for **SublimeText** to highlight
-brackets, it matches the brackets, and then gives the brackets
-different colors for different layers. like a rainbow.
 
-Note that this plugin is available for all color schemes, whether
-they are in tmTheme format or sublime-color-scheme format, so you
-can change the color scheme at will.
+Hi, welcome to use my plugins!
+
+This plugin I wrote for **SublimeText** is to highlight brackets. It matches brackets you have added for the file type, then gives brackets at different levels different colors, in the cycle of the number of colors. colors are gave in the settings file, by default, there are 7 type of colors.
+
+parentheses, braces, brackets are treated as brackets. brackets are configured in setting file, it means you can use R as a opening bracket and L as a close bracket. But, not all strings can be used as brackets, it depends on the token rules which sublime_text has used in the file. The main reason for this is to ignore comments and strings.
+
+Some plugins such as **Color Highlighter** only works in `.tmTheme` formated color scheme, but you needn't worry about that when using this plugin, this plugin works well both in `.sublime-color-scheme` and `tmTheme` formated color scheme. Not only that，whenever you change you color scheme setting, it will readapt the new color scheme's background, without restarting sublime_text.
+
+Please don't mind my poor English. I'm trying to learn it.:)
 
 
 ## Installation
+
 Clone or download this repository to your SublimeText's **Packages** directory.
 Note that the directory name should be the name of this repository.
+Also, if you have installed Package Control, just use it, they have accepted my plugin.
 
 
 ## Usage
 
-### Working mode
-The rainbower has two mode for rainbowing brackets matched.
-- The mode **all** will highlight all brackets matched in the `View`.
-  In this case, editing a very large file maybe cause some delay.
+The mode `"part"` will only highlight brackets around the cursor, with a threshold for the number of characters to be searched. For the reason of speed, you can use this mode, but I do not recommend it, you will know.
 
-- The mode **part** will only highlight brackets around the cursor,
-  with a threshold for the number of characters to be searched.
-  Not applicable to multiple cursor editing.
+Settings are easy to understand, if you have patience, try to change them and notice changes of views.
 
-### Colors
-Colors for highlighting matched brackets are stored in a array with
-a variable number of colors. You can add any number of colors, The
-plugin will loop use each color in the array.
+## Add your language
 
-### More language support
-This plugin is designed and developed for scheme language,
-but it doesn't only support scheme. To support your own language,
-please refer to the original configuration and add your own language
-to the Settings file.
+Adding setting
+```json
+"json": {}
+```
+to `"languages"` will make JSON file be supported. If you care about more, the following settings means, at a JSON file, "(" and ")" will be remove from global `"brackets"` setting, so it will get a better speed and sometimes is more advisable.
+files with extensions listed in `"extensions"` will be treated as JSON files.
+
+mode `"all"` indicated that when you open files treated as JSON files, the plugin will search full text to highlight brackets added in global `"brackets"` setting, except bracket-pairs whose left-part are listed in `"!brackets"`.
+
+```json
+"json": {
+    "extensions": [
+        "json",
+        "sublime-settings",
+        "sublime-menu",
+        "sublime-build",
+        "sublime-keymap",
+        "sublime-color-scheme"
+    ],
+    "mode": "all",
+    "!brackets": ["("],
+}
+```
 
 
 ## Screenshots
-- Material color scheme, Json
-  ![material-color-scheme, Json](https://github.com/absop/RainbowBrackets/blob/master/images/material-json.png)
-- Material color scheme, Scheme
-  ![material-color-scheme, Scheme](https://github.com/absop/RainbowBrackets/blob/master/images/material.png)
-- Material-lighter, Scheme
-  ![material-lighter-color-scheme, Scheme](https://github.com/absop/RainbowBrackets/blob/master/images/material-lighter.png)
+
+- Material color scheme, JSON file.
+  ![](https://github.com/absop/RainbowBrackets/raw/master/images/material-json.png)
+- Material color scheme, Scheme language
+  ![](https://github.com/absop/RainbowBrackets/raw/master/images/material.png)
+- Material lighter color scheme, Scheme language
+  ![](https://github.com/absop/RainbowBrackets/raw/master/images/material-lighter.png)

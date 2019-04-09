@@ -362,6 +362,8 @@ class RainbowViewsManager(sublime_plugin.EventListener):
     def on_close(self, view):
         if view.view_id in self.tincted_views:
             self.tincted_views.pop(view.view_id)
+        elif view.view_id in self.ignored_views:
+            self.ignored_views.pop(view.view_id)
 
 
 def load_settings(cls):
