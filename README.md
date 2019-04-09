@@ -57,8 +57,8 @@ mode `"all"` indicated that when you open files treated as JSON files, the plugi
 ## Screenshots
 
 - Material color scheme, JSON file.
-  ![](https://github.com/absop/RainbowBrackets/raw/master/images/material-json.png)
+  ![](images/material-json.png)
 - Material color scheme, Scheme language
-  ![](https://github.com/absop/RainbowBrackets/raw/master/images/material.png)
+  ![](images/material.png)
 - Material lighter color scheme, Scheme language
-  ![](https://github.com/absop/RainbowBrackets/raw/master/images/material-lighter.png)
+  ![](images/material-lighter.png)
