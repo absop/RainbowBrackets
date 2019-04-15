@@ -1,5 +1,8 @@
 # RainbowBrackets
 
+[![License][license-image]](/LICENSE)
+[![Downloads][packagecontrol-image]][packagecontrol-link]
+
 
 ## Introduction
 
@@ -62,3 +65,8 @@ mode `"all"` indicated that when you open files treated as JSON files, the plugi
   ![](images/material.png)
 - Material lighter color scheme, Scheme language
   ![](images/material-lighter.png)
+
+
+[license-image]: https://img.shields.io/badge/license-MIT-blue.svg
+[packagecontrol-image]: https://img.shields.io/packagecontrol/dt/RainbowBrackets.svg
+[packagecontrol-link]: https://packagecontrol.io/packages/RainbowBrackets
