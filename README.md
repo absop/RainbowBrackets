@@ -14,7 +14,7 @@ parentheses, braces, brackets are treated as brackets. brackets are configured i
 
 Some plugins such as **Color Highlighter** only works in `.tmTheme` formated color scheme, but you needn't worry about that when using this plugin, this plugin works well both in `.sublime-color-scheme` and `tmTheme` formated color scheme. Not only that，whenever you change you color scheme setting, it will readapt the new color scheme's background, without restarting sublime_text.
 
-Please don't mind my poor English. I'm trying to learn it.:)
+Please don't mind my poor English. I'm trying to learn it.:-)
 
 
 ## Installation
