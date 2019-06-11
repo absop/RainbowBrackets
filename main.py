@@ -122,7 +122,9 @@ class RainbowViewListener(object):
                 token = contents[region.a - begin:region.b - begin]
                 if token in self.brackets:
                     # skip ignore
-                    if "comment" in scope or "string" in scope:
+                    if ("comment" in scope or
+                        "string" in scope or
+                        "char" in scope):
                         continue
 
                     if token in self.left_brackets:
@@ -160,7 +162,9 @@ class RainbowViewListener(object):
                 token = contents[region.a - begin:region.b - begin]
                 if token in self.brackets:
                     # skip ignore
-                    if "comment" in scope or "string" in scope:
+                    if ("comment" in scope or
+                        "string" in scope or
+                        "char" in scope):
                         continue
 
                     if token in self.right_brackets:

@@ -1,25 +1,26 @@
 [
     {
         "id": "preferences",
-        "children":
-        [
+        "children": [
             {
                 "caption": "Package Settings",
                 "id": "package-settings",
                 "mnemonic": "P",
-                "children":
-                [
+                "children": [
                     {
                         "caption": "RainbowBrackets",
                         "mnemonic": "R",
-                        "children":
-                        [
+                        "children": [
                             {
                                 "caption": "README",
                                 "command": "open_file",
-                                "args": {"file": "${packages}/RainbowBrackets/README.md"}
+                                "args": {
+                                    "file": "${packages}/RainbowBrackets/README.md"
+                                }
                             },
-                            { "caption": "-" },
+                            {
+                                "caption": "-"
+                            },
                             {
                                 "caption": "Settings",
                                 "command": "edit_settings",
@@ -27,7 +28,7 @@
                                     "base_file": "${packages}/RainbowBrackets/RainbowBrackets.sublime-settings",
                                     "default": "// RainbowBrackets Preferences – User\n// ====================================================\n\n{\n\t$0\n}\n"
                                 }
-                            },
+                            }
                         ]
                     }
                 ]
