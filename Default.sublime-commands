@@ -18,5 +18,13 @@
     {
         "caption": "RainbowBrackets: toggle log",
         "command": "rainbow_toggle_log",
+    },
+    {
+        "caption": "RainbowBrackets: clean color schemes",
+        "command": "rainbow_clean_color_schemes",
+    },
+    {
+        "caption": "RainbowBrackets: rebuild color scheme",
+        "command": "rainbow_rebuild_color_scheme",
     }
 ]

@@ -41,6 +41,26 @@ class RainbowClearViewCommand(RainbowCommand):
         RainbowViewsManager.clear_view(self.view)
 
 
+class RainbowCleanColorSchemesCommand(RainbowCommand):
+    def run(self, edit):
+        self.log_command()
+        current_color_scheme = RainbowViewsManager.color_scheme
+        cache_dir = profile._cache_color_scheme_dir(relative=False)
+        for color_scheme in os.listdir(cache_dir):
+            if color_scheme != current_color_scheme:
+                try:
+                    os.remove(os.path.join(cache_dir, color_scheme))
+                except:
+                    pass
+
+
+class RainbowRebuildColorSchemeCommand(RainbowCommand):
+    def run(self, edit):
+        self.log_command()
+        current_color_scheme = RainbowViewsManager.color_scheme
+        RainbowViewsManager.write_color_scheme(current_color_scheme)
+
+
 class RainbowViewListener(object):
     def __init__(self, view, syntax, brackets, mode=0):
         self.view = view
