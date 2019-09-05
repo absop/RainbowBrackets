@@ -143,7 +143,7 @@ class RainbowViewListener(object):
                 if token in self.brackets:
                     # skip ignore
                     if ("comment" in scope or "string" in scope or
-                        "char" in scope):
+                        "char" in scope or "symbol" in scope):
                         continue
 
                     if token in self.left_brackets:
@@ -182,7 +182,7 @@ class RainbowViewListener(object):
                 if token in self.brackets:
                     # skip ignore
                     if ("comment" in scope or "string" in scope or
-                        "char" in scope):
+                        "char" in scope or "symbol" in scope):
                         continue
 
                     if token in self.right_brackets:
