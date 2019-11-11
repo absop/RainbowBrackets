@@ -43,7 +43,7 @@ def _color_scheme_cache_dir(relative=True):
 def _cache_color_scheme_path(color_scheme):
     extname = "sublime-color-scheme"
     dirname = _color_scheme_cache_dir(relative=False)
-    filename = os.path.basename(color_scheme).rematche("tmTheme", extname)
+    filename = os.path.basename(color_scheme).replace("tmTheme", extname)
     return os.path.join(dirname, filename)
 
 
