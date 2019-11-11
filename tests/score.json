@@ -1,0 +1,33 @@
+{
+    "students": [
+        {
+            "name": "Tom",
+            "age": 12,
+            "grade": 6,
+            "scores": {
+                "English": 96,
+                "Math": 92,
+                "Physics": 93
+            }
+        },
+        {
+            "name": "John",
+            "age": 15,
+            "grade": 8,
+            "scores": {
+                "English": 97,
+                "Math": 89,
+                "Physics": 83
+            }
+        },
+        {
+            "name": "Julia",
+            "age": 9,
+            "grade": 4,
+            "scores": {
+                "English": 97,
+                "Math": 99
+            }
+        }
+    ]
+}

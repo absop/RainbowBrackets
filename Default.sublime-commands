@@ -8,23 +8,23 @@
           }
     },
     {
-        "caption": "RainbowBrackets: tinct view",
-        "command": "rainbow_tinct_view",
+        "caption": "RainbowBrackets: make rainbow",
+        "command": "rainbow_scheme",
+        "args": { "action": "make rainbow" }
     },
     {
-        "caption": "RainbowBrackets: clear view",
-        "command": "rainbow_clear_view",
+        "caption": "RainbowBrackets: clear rainbow",
+        "command": "rainbow_scheme",
+        "args": { "action": "clear rainbow" }
     },
     {
         "caption": "RainbowBrackets: toggle log",
-        "command": "rainbow_toggle_log",
-    },
-    {
-        "caption": "RainbowBrackets: clean color schemes",
-        "command": "rainbow_clean_color_schemes",
+        "command": "rainbow_scheme",
+        "args": { "action": "toggle log" }
     },
     {
         "caption": "RainbowBrackets: rebuild color scheme",
-        "command": "rainbow_rebuild_color_scheme",
+        "command": "rainbow_scheme",
+        "args": { "action": "rebuild color scheme" }
     }
 ]

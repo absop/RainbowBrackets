@@ -1,29 +1,22 @@
 {
-    // mode:
-    // - part:
-    //    highlight all brackets, not suitable for very large file editing.
-    // - part:
-    //    only highlight brackets near to the cursor point with a threshod.
-    //    the color of each bracket depends on the cursor's position.
-    //    not applicable to multiple cursor editing.
-
-    "maxsize": 20000, // for part mode.
-
-    "brackets": {
+    "brackets_map": {
         "(": ")",
         "[": "]",
         "{": "}"
     },
 
-    "languages": {
-        "scheme": {
-            "extensions": ["scm", "ss"],
-            "mode": "all"
+    "syntax_specific": [
+        {
+            "syntax": "scheme",
+            "opening": ["(", "[", "{"],
+            "extensions": [
+                "scm",
+                "ss"
+            ]
         },
-        "json": {
-            // 将扩展名列在 "extensions" 中的文件按 JSON 文件处理
-            // treat files whose extension is listed
-            // in "extensions" as JSON file.
+        {
+            "syntax": "json",
+            "opening": ["[", "{"],
             "extensions": [
                 "json",
                 "sublime-settings",
@@ -31,15 +24,10 @@
                 "sublime-build",
                 "sublime-keymap",
                 "sublime-color-scheme"
-            ],
-            // 搜索全文内容以匹配所有括号
-            // Search full text to match brackets.
-            "mode": "all",
-            // 将该文件类型不需要的括号添加到这儿，以加快搜索速度
-            // To speed up the search, add brackets which are not nessesary by this file type to "!brackets"
-            "!brackets": ["("]
+            ]
         }
-    },
+    ],
+
     "rainbow_colors": {
         "matched": [
             "#FF0000",
@@ -50,6 +38,6 @@
             "#0041FF",
             "#7D00E5"
         ],
-        "unmatched": "#FF0000"
+        "mismatched": "#FF0000"
     }
 }

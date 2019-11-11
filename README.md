@@ -62,7 +62,7 @@ mode `"all"` indicated that when you open files treated as JSON files, the plugi
 - Material color scheme, JSON file.
   ![](images/material-json.png)
 - Material color scheme, Scheme language
-  ![](images/material.png)
+  ![](images/material-scheme.png)
 - Material lighter color scheme, Scheme language
   ![](images/material-lighter.png)
 
