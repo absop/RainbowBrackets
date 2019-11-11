@@ -9,22 +9,22 @@
     },
     {
         "caption": "RainbowBrackets: make rainbow",
-        "command": "rainbow_scheme",
+        "command": "rainbow_brackets",
         "args": { "action": "make rainbow" }
     },
     {
         "caption": "RainbowBrackets: clear rainbow",
-        "command": "rainbow_scheme",
+        "command": "rainbow_brackets",
         "args": { "action": "clear rainbow" }
     },
     {
         "caption": "RainbowBrackets: toggle log",
-        "command": "rainbow_scheme",
+        "command": "rainbow_brackets",
         "args": { "action": "toggle log" }
     },
     {
         "caption": "RainbowBrackets: rebuild color scheme",
-        "command": "rainbow_scheme",
+        "command": "rainbow_brackets",
         "args": { "action": "rebuild color scheme" }
     }
 ]
