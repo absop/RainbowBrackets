@@ -15,9 +15,9 @@ scheme_data = {
 }
 
 color_scheme = "Monokai.sublime-color-scheme"
-misplaced_key = "rainbow_misplaced"
-misplaced_scope = "misplaced.rainbow"
-misplaced_color = "#FF0000"
+mismatched_key = "rainbow_mismatched"
+mismatched_scope = "mismatched.rainbow"
+mismatched_color = "#FF0000"
 key_scope_colors = []
 syntax_specific = {}
 color_number = 0
@@ -34,7 +34,7 @@ settings = None
 preferences = None
 
 
-def _cache_color_scheme_dir(relative=True):
+def _color_scheme_cache_dir(relative=True):
     nodes = ["User", "Color Schemes", "RainbowBrackets"]
     branch = "Packages" if relative else sublime.packages_path()
     return os.path.join(branch, *nodes)
@@ -42,8 +42,8 @@ def _cache_color_scheme_dir(relative=True):
 
 def _cache_color_scheme_path(color_scheme):
     extname = "sublime-color-scheme"
-    dirname = _cache_color_scheme_dir(relative=False)
-    filename = os.path.basename(color_scheme).replace("tmTheme", extname)
+    dirname = _color_scheme_cache_dir(relative=False)
+    filename = os.path.basename(color_scheme).rematche("tmTheme", extname)
     return os.path.join(dirname, filename)
 
 
@@ -72,9 +72,9 @@ def build_color_scheme():
             "background": nearest_bgcolor
         })
     scheme_rules.append({
-        "name": misplaced_key,
-        "scope": misplaced_scope,
-        "foreground": misplaced_color,
+        "name": mismatched_key,
+        "scope": mismatched_scope,
+        "foreground": mismatched_color,
         "background": bgcolor
     })
 
@@ -87,7 +87,7 @@ def build_color_scheme():
 
 def configure_settings():
     global color_number
-    global misplaced_color
+    global mismatched_color
     global key_scope_colors
     global color_scheme
     global brackets_map
@@ -123,7 +123,7 @@ def configure_settings():
         scope = color_no + ".matched.rs"
         key_scope_colors.append((key, scope, color))
         color_number += 1
-    misplaced_color = rainbow_colors.get("misplaced", "#FF0000")
+    mismatched_color = rainbow_colors.get("mismatched", "#FF0000")
     color_scheme = preferences.get("color_scheme", color_scheme)
     build_color_scheme()
 
@@ -136,12 +136,23 @@ def rebuild_color_scheme():
         build_color_scheme()
 
 
+def clear_color_schemes():
+    cache_dir = _color_scheme_cache_dir(relative=False)
+    for cs in os.listdir(cache_dir):
+        if cs != color_scheme:
+            try:
+                os.remove(os.path.join(cache_dir, cs))
+            except:
+                pass
+    build_color_scheme()
+
+
 def load_settings(settings_reloaded):
     def call_back():
         configure_settings()
         settings_reloaded()
 
-    os.makedirs(_cache_color_scheme_dir(relative=False), exist_ok=True)
+    os.makedirs(_color_scheme_cache_dir(relative=False), exist_ok=True)
 
     global settings, preferences
     settings = sublime.load_settings("RainbowBrackets.sublime-settings")

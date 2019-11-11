@@ -18,14 +18,7 @@ class RainbowBracketsCommand(sublime_plugin.TextCommand):
         elif action == "toggle log":
             Loger.debug = not Loger.debug
         elif action == "rebuild color scheme":
-            cache_dir = Color._cache_color_scheme_dir(relative=False)
-            for color_scheme in os.listdir(cache_dir):
-                if color_scheme != Color.color_scheme:
-                    try:
-                        os.remove(os.path.join(cache_dir, color_scheme))
-                    except:
-                        pass
-            Color.build_color_scheme()
+            Color.clear_color_scheme()
 
 
 parens_missed = """
