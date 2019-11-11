@@ -23,8 +23,8 @@
         "args": { "action": "toggle log" }
     },
     {
-        "caption": "RainbowBrackets: rebuild color scheme",
+        "caption": "RainbowBrackets: clear color schemes",
         "command": "rainbow_brackets",
-        "args": { "action": "rebuild color scheme" }
+        "args": { "action": "clear color schemes" }
     }
 ]

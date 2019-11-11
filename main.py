@@ -15,10 +15,10 @@ class RainbowBracketsCommand(sublime_plugin.TextCommand):
             RainbowBracketsViewsManager.force_tinct_view(self.view)
         elif action == "clear rainbow":
             RainbowBracketsViewsManager.clear_view(self.view)
+        elif action == "clear color schemes":
+            Color.clear_color_schemes()
         elif action == "toggle log":
             Loger.debug = not Loger.debug
-        elif action == "rebuild color scheme":
-            Color.clear_color_schemes()
 
 
 parens_missed = """
