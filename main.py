@@ -110,7 +110,7 @@ class RainbowBracketsViewEventListener(sublime_plugin.ViewEventListener):
                         flags=sublime.DRAW_NO_OUTLINE|sublime.PERSISTENT)
         if mismatched_regions:
             self.keys.add("mismatched_rainbow")
-            self.view.add_regions("mismatched_rainbow", mismatched,
+            self.view.add_regions("mismatched_rainbow", mismatched_regions,
                 scope="mismatched.rainbow",
                 flags=sublime.DRAW_EMPTY|sublime.PERSISTENT)
 
