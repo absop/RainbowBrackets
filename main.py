@@ -27,7 +27,7 @@ class RainbowBracketsCommand(sublime_plugin.WindowCommand):
 
 class RainbowBracketsViewEventListener(sublime_plugin.ViewEventListener):
     color_number = 7
-    all_brackets = {}
+    bracket_pairs = {}
     languages = {}
     plain_text = {}
     plain_text = {
@@ -55,40 +55,19 @@ class RainbowBracketsViewEventListener(sublime_plugin.ViewEventListener):
         self.on_load()
 
     def on_load(self):
-        if not (self.opening and self.closing):
-            return
-        region = sublime.Region(0, self.view.size())
-        tokens = self.view.extract_tokens_with_scopes(region)
-        if len(tokens) < 1:
-            return
-        self.find_all_brackets(tokens, self.opening, self.closing)
-        self.clear_brackets()
-
-        if self.matched:
-            regions_by_level = [[] for i in range(self.color_number)]
-            for level, regions in enumerate(self.matched):
-                regions_by_level[level % self.color_number].extend(regions)
-
-            for level, regions in enumerate(regions_by_level):
-                if regions:
-                    key = "level%d_rainbow" % level
-                    self.keys.add(key)
-                    self.view.add_regions(key, regions,
-                        scope="level%d.rainbow" % level,
-                        flags=sublime.DRAW_NO_OUTLINE|sublime.PERSISTENT)
-        if self.mismatched:
-            self.keys.add("mismatched_rainbow")
-            self.view.add_regions("mismatched_rainbow", self.mismatched,
-                scope="mismatched.rainbow",
-                flags=sublime.DRAW_EMPTY|sublime.PERSISTENT)
+        if self.opening and self.closing:
+            region = sublime.Region(0, self.view.size())
+            tokens = self.view.extract_tokens_with_scopes(region)
+            if len(tokens) > 1:
+                self.add_bracket_regions(tokens, self.opening, self.closing)
 
     def clear_brackets(self):
         for key in self.keys:
             self.view.erase_regions(key)
         self.keys.clear()
 
-    def find_all_brackets(self, tokens, opening, closing):
-        self.matched, self.mismatched = [], []
+    def add_bracket_regions(self, tokens, opening, closing):
+        matched_regions, mismatched_regions = [], []
         begin, end = tokens[0][0].a, tokens[-1][0].b
         contents = self.view.substr(sublime.Region(begin, end))
 
@@ -103,17 +82,37 @@ class RainbowBracketsViewEventListener(sublime_plugin.ViewEventListener):
             if token in opening:
                 regions.append(region)
                 stack.append(token)
-                if len(stack) > len(self.matched):
-                    self.matched.append([])
+                if len(stack) > len(matched_regions):
+                    matched_regions.append([])
             elif token in closing:
-                if stack and token == self.all_brackets[stack[-1]]:
+                if stack and token == self.bracket_pairs[stack[-1]]:
                     stack.pop()
-                    self.matched[len(stack)].append(regions.pop())
-                    self.matched[len(stack)].append(region)
+                    matched_regions[len(stack)].append(regions.pop())
+                    matched_regions[len(stack)].append(region)
                 else:
-                    self.mismatched.append(region)
+                    mismatched_regions.append(region)
             else:
                 continue
+
+        self.clear_brackets()
+
+        if matched_regions:
+            regions_by_level = [[] for i in range(self.color_number)]
+            for level, regions in enumerate(matched_regions):
+                regions_by_level[level % self.color_number].extend(regions)
+
+            for level, regions in enumerate(regions_by_level):
+                if regions:
+                    key = "level%d_rainbow" % level
+                    self.keys.add(key)
+                    self.view.add_regions(key, regions,
+                        scope="level%d.rainbow" % level,
+                        flags=sublime.DRAW_NO_OUTLINE|sublime.PERSISTENT)
+        if mismatched_regions:
+            self.keys.add("mismatched_rainbow")
+            self.view.add_regions("mismatched_rainbow", mismatched,
+                scope="mismatched.rainbow",
+                flags=sublime.DRAW_EMPTY|sublime.PERSISTENT)
 
 
 class RainbowBracketsManager(sublime_plugin.EventListener):
@@ -226,7 +225,7 @@ class RainbowBracketsManager(sublime_plugin.EventListener):
             ]
         }
         # We only need to write a same named color_scheme,
-        # sublime will load and apply it automatically.
+        # then sublime will load and apply it automatically.
         os.makedirs(color_scheme_path, exist_ok=True)
         with open(color_scheme_file, "w+") as file:
             file.write(json.dumps(color_scheme_data))
@@ -238,17 +237,17 @@ class RainbowBracketsManager(sublime_plugin.EventListener):
         velcls.color_number = len(cls.rainbow_colors["matched"])
         velcls.plain_text["opening"].clear()
         velcls.plain_text["closing"].clear()
-        velcls.all_brackets.clear()
+        velcls.bracket_pairs.clear()
         velcls.languages.clear()
-        for o, c in cls.settings.get("all_brackets", {}).items():
+        for o, c in cls.settings.get("bracket_pairs", {}).items():
             velcls.plain_text["opening"].add(o)
             velcls.plain_text["closing"].add(c)
-            velcls.all_brackets[o] = c
-            velcls.all_brackets[c] = o
+            velcls.bracket_pairs[o] = c
+            velcls.bracket_pairs[c] = o
 
         for lang in cls.settings.get("languages", []):
             lang["opening"] = opening = set(lang["opening"])
-            lang["closing"] = set(velcls.all_brackets[b] for b in opening)
+            lang["closing"] = set(velcls.bracket_pairs[b] for b in opening)
             velcls.languages[lang.pop("syntax")] = lang
 
         cls.build_color_scheme()

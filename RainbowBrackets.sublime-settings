@@ -1,5 +1,5 @@
 {
-    "all_brackets": {
+    "bracket_pairs": {
         "(": ")",
         "[": "]",
         "{": "}"
