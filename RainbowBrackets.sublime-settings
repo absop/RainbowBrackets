@@ -1,11 +1,11 @@
 {
-    "brackets_map": {
+    "all_brackets": {
         "(": ")",
         "[": "]",
         "{": "}"
     },
 
-    "syntax_specific": [
+    "languages": [
         {
             "syntax": "scheme",
             "opening": ["(", "[", "{"],
@@ -23,6 +23,7 @@
                 "sublime-menu",
                 "sublime-build",
                 "sublime-keymap",
+                "sublime-commands",
                 "sublime-color-scheme"
             ]
         }

@@ -10,21 +10,16 @@
     {
         "caption": "RainbowBrackets: make rainbow",
         "command": "rainbow_brackets",
-        "args": { "action": "make rainbow" }
+        "args": { "action": "force_add_view" }
     },
     {
         "caption": "RainbowBrackets: clear rainbow",
         "command": "rainbow_brackets",
-        "args": { "action": "clear rainbow" }
-    },
-    {
-        "caption": "RainbowBrackets: toggle log",
-        "command": "rainbow_brackets",
-        "args": { "action": "toggle log" }
+        "args": { "action": "clear_view" }
     },
     {
         "caption": "RainbowBrackets: clear color schemes",
         "command": "rainbow_brackets",
-        "args": { "action": "clear color schemes" }
+        "args": { "action": "clear_color_schemes" }
     }
 ]
