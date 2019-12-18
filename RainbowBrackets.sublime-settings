@@ -19,7 +19,7 @@
             "scheme": {
                 "opening": ["(", "[", "{"],
                 "ignored_scopes": [
-                    "comment", "string", "char", "symbol"
+                    "comment", "string", "constant.character", "symbol"
                 ],
                 "extensions": [
                     "scm",
