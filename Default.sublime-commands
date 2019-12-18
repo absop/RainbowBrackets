@@ -8,18 +8,23 @@
           }
     },
     {
+        "caption": "RainbowBrackets: toggle debug",
+        "command": "rainbow_brackets",
+        "args": { "action": "toggle debug" }
+    },
+    {
         "caption": "RainbowBrackets: make rainbow",
         "command": "rainbow_brackets",
-        "args": { "action": "force_add_view" }
+        "args": { "action": "force add view" }
     },
     {
         "caption": "RainbowBrackets: clear rainbow",
         "command": "rainbow_brackets",
-        "args": { "action": "clear_view" }
+        "args": { "action": "clear view" }
     },
     {
         "caption": "RainbowBrackets: clear color schemes",
         "command": "rainbow_brackets",
-        "args": { "action": "clear_color_schemes" }
+        "args": { "action": "clear color schemes" }
     }
 ]

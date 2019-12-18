@@ -1,39 +1,132 @@
+import re
 import os
 import json
+import time
 
 import sublime
 import sublime_plugin
 
 
-def nearest_color(color):
-    b = int(color[5:7], 16)
-    b += 1 - 2 * (b == 255)
-    return color[:-2] + "%02x" % b
+SETTINGS_FILE = "RainbowBrackets.sublime-settings"
+
+
+class Debuger():
+    debug = False
+
+    @classmethod
+    def print(cls, *args):
+        if cls.debug:
+            print("RainbowBrackets:", *args, sep="\n\t")
 
 
 class RainbowBracketsCommand(sublime_plugin.WindowCommand):
     def run(self, action):
-        if action == "force_add_view":
-            RainbowBracketsManager.force_add_view(
-                self.window.active_view())
+        view = self.window.active_view()
 
-        elif action == "clear_view":
-            RainbowBracketsManager.clear_and_ignore_view(
-                self.window.active_view())
+        if action == "force add view":
+            view.settings().set("rb_enable", True)
+            RainbowBracketsViewListener.check_add_view(view, force=True)
+            sublime_plugin.check_view_event_listeners(view)
 
-        elif action == "clear_color_schemes":
-            RainbowBracketsManager.clear_color_schemes()
+        elif action == "clear view":
+            if RainbowBracketsViewListener.check_clear_view(view):
+                view.settings().set("rb_enable", False)
+                sublime_plugin.check_view_event_listeners(view)
+
+        elif action == "toggle debug":
+            Debuger.debug = not Debuger.debug
+            sublime.load_settings(SETTINGS_FILE).set("debug", Debuger.debug)
+            sublime.save_settings(SETTINGS_FILE)
+
+        elif action == "clear color schemes":
+            ColorSchemeManager.clear_color_schemes()
 
 
-class RainbowBracketsViewEventListener(sublime_plugin.ViewEventListener):
+class RainbowBracketsViewListener(sublime_plugin.ViewEventListener):
+    enable = False
     color_number = 7
     bracket_pairs = {}
-    languages = {}
-    plain_text = {}
-    plain_text = {
-        "opening": set(),
-        "closing": set()
-    }
+    filetypes = {}
+
+    @classmethod
+    def load_settings(cls, settings):
+        Debuger.debug = settings.get("debug", False)
+        brackets = settings.get("brackets", {})
+        rainbow_colors = settings.get("rainbow_colors", {})
+
+        cls.color_number = len(rainbow_colors.get("matched", []))
+        cls.enable = True
+        cls.bracket_pairs = pairs = {}
+        cls.filetypes = filetypes = brackets.get("filetypes", {})
+
+        for o, c in brackets.get("pairs", {}).items():
+            cls.bracket_pairs[o] = c
+            cls.bracket_pairs[c] = o
+
+        default = filetypes.get("default", {})
+        for ftype, value in filetypes.items():
+            for key in ("ignored_scopes", "opening"):
+                if key not in value:
+                    value[key] = default.get(key, [])
+
+            value["opening"] = set(value["opening"])
+            value["closing"] = set(pairs[o] for o in value["opening"])
+
+        if cls.color_number == 0:
+            sublime.errer_message("No colors added, plugin will not work")
+            cls.enable = False
+
+        if len(cls.bracket_pairs) == 0:
+            sublime.errer_message("No brackets added, plugin will not work")
+            cls.enable = False
+
+    @classmethod
+    def check_add_view(cls, view, force=False):
+        if not cls.enable:
+            if force:
+                sublime.errer_message("Please check your settings to make the plugin work properly")
+            return
+
+        def check_view_syntax(view, settings):
+            syntax = os.path.splitext(
+                os.path.basename(settings.get("syntax")))[0].lower()
+
+            if (syntax in cls.filetypes):
+                return syntax
+
+            elif view.file_name():
+                extension = os.path.splitext(view.file_name())[1].lstrip(".")
+                for syntax, values in cls.filetypes.items():
+                    if syntax == "default":
+                        continue
+                    if extension in values["extensions"]:
+                        return syntax
+            return None
+
+        settings = view.settings()
+        if settings.get("rb_enable", True) and not settings.has("rb_syntax"):
+            syntax = check_view_syntax(view, settings)
+
+            if syntax is None and force is True:
+                syntax = "default"
+
+            if syntax:
+                brackets = cls.filetypes.get(syntax)
+                if brackets["opening"] and brackets["closing"]:
+                    settings.set("rb_syntax", syntax)
+
+    @classmethod
+    def check_clear_view(cls, view):
+        if (view.settings().has("rb_syntax") and
+            view.settings().get("rb_enable", True)):
+            listener = sublime_plugin.find_view_event_listener(view, cls)
+
+            if listener is not None:
+                listener.clear_bracket_regions()
+                Debuger.print("exited from file: %s" % view.file_name())
+                return True
+
+        return False
 
     @classmethod
     def is_applicable(cls, settings):
@@ -41,135 +134,124 @@ class RainbowBracketsViewEventListener(sublime_plugin.ViewEventListener):
 
     def __init__(self, view):
         syntax = view.settings().get("rb_syntax")
-        values = self.languages.get(syntax, self.plain_text)
+        values = self.filetypes.get(syntax)
+        self.ignored_scopes = values.get("ignored_scopes")
         self.opening = values["opening"]
         self.closing = values["closing"]
+        self.matched_regions = []
+        self.mismatched_regions = []
         self.view = view
-        self.keys = set()
+        self.selector = "|".join(self.ignored_scopes)
+        self.bracket_pattern = "|".join([
+            re.escape(b) for b in self.bracket_pairs
+        ])
         self.on_load()
 
-    def on_activated(self):
-        pass
-
+    # TODO: Find a efficent way to update dynamically.
     def on_modified(self):
         self.on_load()
 
     def on_load(self):
-        if self.opening and self.closing:
-            region = sublime.Region(0, self.view.size())
-            tokens = self.view.extract_tokens_with_scopes(region)
-            if len(tokens) > 1:
-                self.add_bracket_regions(tokens, self.opening, self.closing)
+        start = time.time()
 
-    def clear_brackets(self):
-        for key in self.keys:
-            self.view.erase_regions(key)
-        self.keys.clear()
+        self.clear_bracket_regions()
+        self.find_all_bracket_regions()
+        self.add_bracket_regions()
 
-    def add_bracket_regions(self, tokens, opening, closing):
-        matched_regions, mismatched_regions = [], []
-        begin, end = tokens[0][0].a, tokens[-1][0].b
-        contents = self.view.substr(sublime.Region(begin, end))
+        cost, name = time.time() - start, self.view.file_name()
+        Debuger.print(
+            "loaded file: %s" % name,
+            "selector: %s" % self.selector,
+            "cost time: %.5f" % cost)
 
-        stack, regions = [], []
-        for region, scope in tokens:
-            token = contents[region.a - begin:region.b - begin]
-            # skip ignore
-            if ("comment" in scope or "string" in scope or
-                "char" in scope or "symbol" in scope):
-                continue
+    def find_all_bracket_regions(self):
+        view, selector = self.view, self.selector
+        opening, pairs = self.opening, self.bracket_pairs
+        full_text = view.substr(sublime.Region(0, self.view.size()))
 
-            if token in opening:
-                regions.append(region)
-                stack.append(token)
-                if len(stack) > len(matched_regions):
-                    matched_regions.append([])
-            elif token in closing:
-                if stack and token == self.bracket_pairs[stack[-1]]:
-                    stack.pop()
-                    matched_regions[len(stack)].append(regions.pop())
-                    matched_regions[len(stack)].append(region)
+        number_levels = self.color_number
+        matched_regions = [list() for i in range(number_levels)]
+        bracket_stack, region_stack = [], []
+
+        if selector:
+            for region in view.find_all(self.bracket_pattern):
+                if view.match_selector(region.a, selector):
+                    continue
+
+                bracket = full_text[region.a:region.b]
+
+                if bracket in opening:
+                    region_stack.append(region)
+                    bracket_stack.append(bracket)
+
+                elif bracket_stack and bracket == pairs[bracket_stack[-1]]:
+                    bracket_stack.pop()
+                    level = len(bracket_stack) % number_levels
+                    matched_regions[level].append(region_stack.pop())
+                    matched_regions[level].append(region)
+
                 else:
-                    mismatched_regions.append(region)
-            else:
-                continue
+                    self.mismatched_regions.append(region)
+        else:
+            for region in view.find_all(self.bracket_pattern):
+                bracket = full_text[region.a:region.b]
 
-        self.clear_brackets()
+                if bracket in opening:
+                    region_stack.append(region)
+                    bracket_stack.append(bracket)
 
-        if matched_regions:
-            regions_by_level = [[] for i in range(self.color_number)]
-            for level, regions in enumerate(matched_regions):
-                regions_by_level[level % self.color_number].extend(regions)
+                elif bracket_stack and bracket == pairs[bracket_stack[-1]]:
+                    bracket_stack.pop()
+                    level = len(bracket_stack) % number_levels
+                    matched_regions[level].append(region_stack.pop())
+                    matched_regions[level].append(region)
 
-            for level, regions in enumerate(regions_by_level):
-                if regions:
-                    key = "level%d_rainbow" % level
-                    self.keys.add(key)
-                    self.view.add_regions(key, regions,
-                        scope="level%d.rainbow" % level,
-                        flags=sublime.DRAW_NO_OUTLINE|sublime.PERSISTENT)
-        if mismatched_regions:
-            self.keys.add("mismatched_rainbow")
-            self.view.add_regions("mismatched_rainbow", mismatched_regions,
-                scope="mismatched.rainbow",
+                else:
+                    self.mismatched_regions.append(region)
+
+        self.matched_regions = [ls for ls in matched_regions if ls]
+
+    def add_bracket_regions(self):
+        if self.matched_regions:
+            for level, regions in enumerate(self.matched_regions):
+                key = "rb_level%d" % level
+                self.view.add_regions(key, regions,
+                    scope="level%d.rb" % level,
+                    flags=sublime.DRAW_NO_OUTLINE|sublime.PERSISTENT)
+
+        if self.mismatched_regions:
+            self.view.add_regions("rb_mismatched", self.mismatched_regions,
+                scope="mismatched.rb",
                 flags=sublime.DRAW_EMPTY|sublime.PERSISTENT)
 
+    def clear_bracket_regions(self):
+        for level in range(len(self.matched_regions)):
+            self.view.erase_regions("rb_level%d" % level)
+        if self.mismatched_regions:
+            self.view.erase_regions("rb_mismatched")
+        self.mismatched_regions = []
+        self.matched_regions = []
 
-class RainbowBracketsManager(sublime_plugin.EventListener):
-    color_scheme = "Monokai.sublime-color-scheme"
+
+class ColorSchemeManager(sublime_plugin.EventListener):
+    DEFAULT_CS = "Packages/Color Scheme - Default/Monokai.sublime-color-scheme"
 
     @classmethod
     def init(cls):
-        load_settings = sublime.load_settings
-        cls.settings = load_settings("RainbowBrackets.sublime-settings")
-        cls.preferences = load_settings("Preferences.sublime-settings")
-        cls.settings.add_on_change("rainbow_colors", cls.update_color_scheme)
-        cls.preferences.add_on_change("color_scheme", cls.rebuild_color_scheme)
-        cls.update_color_scheme()
-        cls.languages = RainbowBracketsViewEventListener.languages
+        def load_settings_build_cs():
+            RainbowBracketsViewListener.load_settings(cls.settings)
+            cls.build_color_scheme()
+
+        cls.color_scheme = cls.DEFAULT_CS
+        cls.prefs = sublime.load_settings("Preferences.sublime-settings")
+        cls.settings = sublime.load_settings(SETTINGS_FILE)
+        cls.prefs.add_on_change("color_scheme", cls.rebuild_color_scheme)
+        cls.settings.add_on_change("rainbow_colors", load_settings_build_cs)
+
+        load_settings_build_cs()
 
     @classmethod
-    def check_view_syntax(cls, view):
-        syntax = os.path.splitext(
-            os.path.basename(view.settings().get("syntax")))[0].lower()
-
-        if (syntax in cls.languages):
-            return syntax
-        elif view.file_name():
-            extension = os.path.splitext(view.file_name())[1].lstrip(".")
-            for syntax, values in cls.languages.items():
-                if extension in values["extensions"]:
-                    return syntax
-        return None
-
-    @classmethod
-    def check_add_view(cls, view, force=False):
-        settings = view.settings()
-        if (settings.get("rb_enable", True) and
-            not settings.has("rb_syntax")):
-            syntax = cls.check_view_syntax(view)
-            if syntax is not None:
-                settings.set("rb_syntax", syntax)
-            elif force is True:
-                settings.set("rb_syntax", "plain_text")
-
-    @classmethod
-    def force_add_view(cls, view):
-        view.settings().set("rb_enable", True)
-        cls.check_add_view(view, force=True)
-        sublime_plugin.check_view_event_listeners(view)
-
-    @classmethod
-    def clear_and_ignore_view(cls, view):
-        listener = sublime_plugin.find_view_event_listener(view,
-            RainbowBracketsViewEventListener)
-        if listener is not None:
-            listener.clear_brackets()
-            view.settings().set("rb_enable", False)
-            sublime_plugin.check_view_event_listeners(view)
-
-    @classmethod
-    def cache_path(cls):
+    def color_scheme_cache_path(cls):
         return os.path.join(sublime.packages_path(),
             "User", "Color Schemes", "RainbowBrackets")
 
@@ -180,7 +262,7 @@ class RainbowBracketsManager(sublime_plugin.EventListener):
 
     @classmethod
     def clear_color_schemes(cls, all=False):
-        color_scheme_path = cls.cache_path()
+        color_scheme_path = cls.color_scheme_cache_path()
         color_scheme_name = cls.color_scheme_name()
         for file in os.listdir(color_scheme_path):
             if file != color_scheme_name or all:
@@ -191,17 +273,34 @@ class RainbowBracketsManager(sublime_plugin.EventListener):
 
     @classmethod
     def rebuild_color_scheme(cls):
-        scheme = cls.preferences.get("color_scheme", cls.color_scheme)
+        scheme = cls.prefs.get("color_scheme", cls.DEFAULT_CS)
         if scheme != cls.color_scheme:
             cls.color_scheme = scheme
             cls.build_color_scheme()
 
     @classmethod
     def build_color_scheme(cls):
-        styles = sublime.active_window().active_view().style()
-        background = nearest_color(styles["background"])
+        def nearest_color(color):
+            b = int(color[5:7], 16)
+            b += 1 - 2 * (b == 255)
+            return color[:-2] + "%02x" % b
 
-        color_scheme_path = cls.cache_path()
+        def color_scheme_background(color_scheme):
+            view = sublime.active_window().active_view()
+            # origin_color_scheme = view.settings().get("color_scheme")
+            view.settings().set("color_scheme", color_scheme)
+            background = view.style().get("background")
+            # view.settings().set("color_scheme", origin_color_scheme)
+            return background
+
+        background = color_scheme_background(cls.color_scheme)
+        nearest_background = nearest_color(background)
+
+        rainbow_colors = cls.settings.get("rainbow_colors", {})
+        matched_colors = rainbow_colors.get("matched", [])
+        mismatched_color = rainbow_colors.get("mismatched", "#FF0000")
+
+        color_scheme_path = cls.color_scheme_cache_path()
         color_scheme_name = cls.color_scheme_name()
         color_scheme_file = os.path.join(color_scheme_path, color_scheme_name)
         color_scheme_data = {
@@ -211,16 +310,16 @@ class RainbowBracketsManager(sublime_plugin.EventListener):
             "globals": {},
             "rules": [
                 {
-                    "scope": "level%d.rainbow" % level,
+                    "scope": "level%d.rb" % level,
                     "foreground": color,
-                    "background": background
+                    "background": nearest_background
                 }
-                for level, color in enumerate(cls.rainbow_colors["matched"])
+                for level, color in enumerate(matched_colors)
             ] + [
                 {
-                    "scope": "mismatched.rainbow",
-                    "foreground": cls.rainbow_colors["mismatched"],
-                    "background": styles["background"]
+                    "scope": "mismatched.rb",
+                    "foreground": mismatched_color,
+                    "background": background
                 }
             ]
         }
@@ -230,34 +329,30 @@ class RainbowBracketsManager(sublime_plugin.EventListener):
         with open(color_scheme_file, "w+") as file:
             file.write(json.dumps(color_scheme_data))
 
-    @classmethod
-    def update_color_scheme(cls):
-        cls.rainbow_colors = cls.settings.get("rainbow_colors", {})
-        velcls = RainbowBracketsViewEventListener
-        velcls.color_number = len(cls.rainbow_colors["matched"])
-        velcls.plain_text["opening"].clear()
-        velcls.plain_text["closing"].clear()
-        velcls.bracket_pairs.clear()
-        velcls.languages.clear()
-        for o, c in cls.settings.get("bracket_pairs", {}).items():
-            velcls.plain_text["opening"].add(o)
-            velcls.plain_text["closing"].add(c)
-            velcls.bracket_pairs[o] = c
-            velcls.bracket_pairs[c] = o
-
-        for lang in cls.settings.get("languages", []):
-            lang["opening"] = opening = set(lang["opening"])
-            lang["closing"] = set(velcls.bracket_pairs[b] for b in opening)
-            velcls.languages[lang.pop("syntax")] = lang
-
-        cls.build_color_scheme()
-
     def on_post_save(self, view):
-        RainbowBracketsManager.check_add_view(view)
+        RainbowBracketsViewListener.check_add_view(view)
 
     def on_activated(self, view):
-        RainbowBracketsManager.check_add_view(view)
+        RainbowBracketsViewListener.check_add_view(view)
 
 
 def plugin_loaded():
-    RainbowBracketsManager.init()
+    def load_plugin():
+        ColorSchemeManager.init()
+        active_view = sublime.active_window().active_view()
+        RainbowBracketsViewListener.check_add_view(active_view)
+
+    load_plugin()
+    sublime.set_timeout(load_plugin, 100)
+
+
+def plugin_unloaded():
+    for window in sublime.windows():
+        for view in window.views():
+            RainbowBracketsViewListener.check_clear_view(view)
+            view.settings().erase("rb_syntax")
+            view.settings().erase("rb_enable")
+
+    ColorSchemeManager.prefs.clear_on_change("color_scheme")
+    ColorSchemeManager.settings.clear_on_change("rainbow_colors")
+
