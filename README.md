@@ -3,7 +3,7 @@
 [![License][license-image]](/LICENSE)
 [![Downloads][packagecontrol-image]][packagecontrol-link]
 
-
+[中文](Chinese.md)
 ## Introduction
 
 Hi, welcome to use my plugins!
