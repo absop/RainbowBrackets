@@ -34,7 +34,7 @@
   采用这种方式，您只需要打开`SublimeText`的`命令面板`（<kbd>ctrl+shift+p</kbd>），然后输入`pcip`，选择`Package Control: Install Package`。然后请您稍等（它在传送乘客信息），等一小段时间之后，你就可以从他的乘客之中找到我了。请记得输入我的名字，无需全名，能够筛选出我就行。
 
 - 如果`Git`是您的管家朋友的话，您可以让它为你把我带回家。
-  具体具体步骤是，
+  具体步骤是，
   1. 打开`SublimeText`的插件目录，在此目录下打开一个终端。
   2. 运行下面命令
     ```shell
@@ -146,7 +146,7 @@
 
   当您切换`Color Scheme`时，我会在您的`Packages/User/Color Schemes/RainbowBrackets`目录下生成对应的`Color Scheme`，用来为括号着色，您可以使用这个命令来清除它们。
 
-  
+
 
 ## 晒照
 
