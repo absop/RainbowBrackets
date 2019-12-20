@@ -242,11 +242,11 @@ class ColorSchemeManager(sublime_plugin.EventListener):
             RainbowBracketsViewListener.load_settings(cls.settings)
             cls.build_color_scheme()
 
-        cls.color_scheme = cls.DEFAULT_CS
         cls.prefs = sublime.load_settings("Preferences.sublime-settings")
         cls.settings = sublime.load_settings(SETTINGS_FILE)
         cls.prefs.add_on_change("color_scheme", cls.rebuild_color_scheme)
         cls.settings.add_on_change("rainbow_colors", load_settings_build_cs)
+        cls.color_scheme = cls.prefs.get("color_scheme", cls.DEFAULT_CS)
 
         load_settings_build_cs()
 
@@ -343,7 +343,7 @@ def plugin_loaded():
         RainbowBracketsViewListener.check_add_view(active_view)
 
     load_plugin()
-    sublime.set_timeout(load_plugin, 100)
+    sublime.set_timeout(load_plugin, 0)
 
 
 def plugin_unloaded():
@@ -355,4 +355,3 @@ def plugin_unloaded():
 
     ColorSchemeManager.prefs.clear_on_change("color_scheme")
     ColorSchemeManager.settings.clear_on_change("rainbow_colors")
-
