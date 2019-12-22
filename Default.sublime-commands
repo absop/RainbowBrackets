@@ -15,12 +15,12 @@
     {
         "caption": "RainbowBrackets: make rainbow",
         "command": "rainbow_brackets",
-        "args": { "action": "force add view" }
+        "args": { "action": "make rainbow" }
     },
     {
         "caption": "RainbowBrackets: clear rainbow",
         "command": "rainbow_brackets",
-        "args": { "action": "clear view" }
+        "args": { "action": "clear rainbow" }
     },
     {
         "caption": "RainbowBrackets: clear color schemes",
