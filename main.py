@@ -302,6 +302,9 @@ class RainbowBracketsViewListener(sublime_plugin.ViewEventListener):
 
     # TODO: A better method to update dynamically.
     def on_modified(self):
+        sels = [r for r in self.view.sel()]
+        if len(sels) == 1 and sels[0].a == self.view.size():
+            return
         self.clear_bracket_regions()
         self.add_bracket_regions()
 
@@ -331,11 +334,21 @@ class RainbowBracketsViewListener(sublime_plugin.ViewEventListener):
     def find_all_bracket_regions(self):
         view, selector = self.view, self.selector
         opening, pairs = self.opening, self.pairs
+        number_levels = self.color_number
         full_text = view.substr(sublime.Region(0, view.size()))
 
-        number_levels = self.color_number
-        matched_regions = [list() for i in range(number_levels)]
+        matched_regions = []
+        matched_appends = []
+        for i in range(number_levels):
+            regions = list()
+            matched_regions.append(regions)
+            matched_appends.append(regions.append)
+
         bracket_stack, region_stack = [], []
+        region_stack_append = region_stack.append
+        bracket_stack_append = bracket_stack.append
+        region_stack_pop = region_stack.pop
+        bracket_stack_pop = bracket_stack.pop
 
         if selector:
             for region in view.find_all(self.pattern):
@@ -345,14 +358,14 @@ class RainbowBracketsViewListener(sublime_plugin.ViewEventListener):
                 bracket = full_text[region.a:region.b]
 
                 if bracket in opening:
-                    region_stack.append(region)
-                    bracket_stack.append(bracket)
+                    region_stack_append(region)
+                    bracket_stack_append(bracket)
 
                 elif bracket_stack and bracket == pairs[bracket_stack[-1]]:
-                    bracket_stack.pop()
+                    bracket_stack_pop()
                     level = len(bracket_stack) % number_levels
-                    matched_regions[level].append(region_stack.pop())
-                    matched_regions[level].append(region)
+                    matched_appends[level](region_stack_pop())
+                    matched_appends[level](region)
 
                 else:
                     self.mismatched_regions.append(region)
@@ -361,14 +374,14 @@ class RainbowBracketsViewListener(sublime_plugin.ViewEventListener):
                 bracket = full_text[region.a:region.b]
 
                 if bracket in opening:
-                    region_stack.append(region)
-                    bracket_stack.append(bracket)
+                    region_stack_append(region)
+                    bracket_stack_append(bracket)
 
                 elif bracket_stack and bracket == pairs[bracket_stack[-1]]:
-                    bracket_stack.pop()
+                    bracket_stack_pop()
                     level = len(bracket_stack) % number_levels
-                    matched_regions[level].append(region_stack.pop())
-                    matched_regions[level].append(region)
+                    matched_appends[level](region_stack_pop())
+                    matched_appends[level](region)
 
                 else:
                     self.mismatched_regions.append(region)
