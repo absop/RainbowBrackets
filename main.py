@@ -12,12 +12,11 @@ SETTINGS_FILE = "RainbowBrackets.sublime-settings"
 
 class Debuger():
     debug = False
-    employer = "RainbowBrackets"
 
     @classmethod
     def print(cls, *args):
         if cls.debug:
-            print("%s:" % cls.employer, *args, sep="\n\t")
+            print("RainbowBrackets:", *args, sep="\n\t")
 
     @classmethod
     def pprint(cls, obj):
@@ -28,7 +27,7 @@ class Debuger():
                 return json.JSONEncoder.default(self, obj)
 
         if cls.debug:
-            print("%s:" % cls.employer, json.dumps(obj,
+            print("RainbowBrackets:", json.dumps(obj,
                 cls=setEncoder, indent=4,
                 sort_keys=True, ensure_ascii=False))
 
@@ -69,21 +68,11 @@ class OperateBracketsCommand(sublime_plugin.TextCommand):
             self.transform(edit, to)
 
     def select_brackets(self):
-        for p in self.find_cursor_brackets():
-            cover = self.cover(p[0], p[1])
-            self.view.sel().add(cover)
+        def cover(left, right):
+            return sublime.Region(left.a, right.b)
 
-    def transform(self, edit, to):
-        replace_list = []
         for p in self.find_cursor_brackets():
-            if self.view.substr(p[0]) == to:
-                continue
-            replace_list.append((p[0], to))
-            replace_list.append((p[1], self.bracket_pairs[to]))
-
-        replace_list.sort(key=lambda i:i[0], reverse=True)
-        for region, content in replace_list:
-            self.view.replace(edit, region, content)
+            self.view.sel().add(cover(p[0], p[1]))
 
     def remove_brackets(self, edit, select_content=True):
         pairs = [p for p in self.find_cursor_brackets()]
@@ -101,74 +90,108 @@ class OperateBracketsCommand(sublime_plugin.TextCommand):
                 selections.append(sublime.Region(begin, end))
             self.view.sel().add_all(selections)
 
-    def cover(self, left, right):
-        return sublime.Region(left.a, right.b)
+    def transform(self, edit, to):
+        replace_list = []
+        for p in self.find_cursor_brackets():
+            if self.view.substr(p[0]) == to:
+                continue
+            replace_list.append((p[0], to))
+            replace_list.append((p[1], self.bracket_pairs[to]))
+
+        replace_list.sort(key=lambda i:i[0], reverse=True)
+        for region, content in replace_list:
+            self.view.replace(edit, region, content)
 
     def find_cursor_brackets(self):
-        pairs = []
-        for region in self.view.sel():
-            brackets = self.search_nearest_brackets(region)
-            if brackets:
-                if pairs and brackets == pairs[-1]:
-                    continue
-                else:
-                    pairs.append(brackets)
-        return pairs
-
-    def search_nearest_brackets(self, region):
-        def search(region, opening, closing, next):
-            stack = []
-            while full_text_region.contains(region):
-                tokens = view.extract_tokens_with_scopes(region)
-                if tokens:
-                    region, scope = tokens[0]
-                    if not match_selector(region.a, selector):
-                        token = substr(region)
-                        if token in opening:
-                            if stack:
-                                if pairs[stack[-1]] == token:
-                                    stack.pop()
-                                else:
-                                    return False
-                            else:
-                                if pair[0] is None:
-                                    pair[0] = (region, token)
-                                    return True
-                                elif pair[0][1] == pairs[token]:
-                                    pair[1] = (region, token)
-                                    return True
-                        elif token in closing:
-                            stack.append(token)
-                    next(region)
-                else:
-                    return False
-            return False
-
-        def last(region):
-            region.a = region.b = region.begin() - 1
-
-        def next(region):
-            region.a = region.end()
-            region.b = region.a + 1
-
-        view, pair = self.view, [None, None]
-        full_text_region = sublime.Region(0, view.size())
-        values = RainbowBracketsViewListener.get_brackets(view)
-        o = values["opening"]
-        c = values["closing"]
+        view = self.view
+        start = time.time()
+        all_bracket_regions, values = RainbowBracketsViewListener.get_brackets(
+            view)
+        opening = values["opening"]
+        closing = values["closing"]
         pairs = values["pairs"]
         selector = values["selector"]
 
         self.bracket_pairs = pairs
 
+        length = len(all_bracket_regions)
+        def binsearch(point, lo, hi):
+            while lo < hi:
+                mi = (lo + hi + 1) // 2
+                region = all_bracket_regions[mi]
+                if region.a >= point:
+                    hi = mi - 1
+                else:
+                    lo = mi
+            if all_bracket_regions[lo].a >= point:
+                return -1
+            return lo
+
+        def search_location(point):
+            return binsearch(point, 0, length - 1)
+
+        cursors = set()
+        if length > 0:
+            for r in view.sel():
+                location = search_location(r.a)
+                if location > -1:
+                    cursors.add(location)
+
         substr = view.substr
         match_selector = view.match_selector
-        begin, end = region.begin(), region.end()
-        left = sublime.Region(begin - 1, begin)
-        right = sublime.Region(end, end + 1)
-        search(left, o, c, last) and search(right, c, o, next)
+        region_pairs = []
+        for location in cursors:
+            if location == length - 1:
+                continue
 
-        return pair[0] and pair[1] and (pair[0][0], pair[1][0])
+            left, stack = None, []
+            for i in range(location, -1, -1):
+                region = all_bracket_regions[i]
+                if match_selector(region.a, selector):
+                    continue
+                bracket = substr(region)
+                if bracket in opening:
+                    if stack:
+                        if pairs[stack[-1]] == bracket:
+                            stack.pop()
+                        else:
+                            break
+                    else:
+                        left = (region, bracket)
+                        break
+                else:
+                    stack.append(bracket)
+
+            if left is None:
+                continue
+
+            right, stack = None, []
+            right_bracket = pairs[left[1]]
+            for i in range(location + 1, length, 1):
+                region = all_bracket_regions[i]
+                if match_selector(region.a, selector):
+                    continue
+                bracket = substr(region)
+                if bracket in closing:
+                    if stack:
+                        if pairs[stack[-1]] == bracket:
+                            stack.pop()
+                        else:
+                            break
+                    else:
+                        if right_bracket == bracket:
+                            right = (region, bracket)
+                        break
+                else:
+                    stack.append(bracket)
+
+            if left and right:
+                region_pairs.append((left[0], right[0]))
+
+        end = time.time()
+        print("matched done cost: %.5fs" % (end - start))
+
+        return region_pairs
 
 
 class RainbowBracketsViewListener(sublime_plugin.ViewEventListener):
@@ -225,7 +248,16 @@ class RainbowBracketsViewListener(sublime_plugin.ViewEventListener):
     @classmethod
     def get_brackets(cls, view):
         syntax = view.settings().get("rb_syntax", "default")
-        return cls.filetypes.get(syntax)
+        listener = sublime_plugin.find_view_event_listener(view, cls)
+        values = cls.filetypes.get(syntax)
+        if listener is not None:
+            all_bracket_regions = listener.all_bracket_regions
+        else:
+            start = time.time()
+            all_bracket_regions = view.find_all(values["pattern"])
+            found = time.time()
+            print("find_all cost: %.5fs" % (found - start))
+        return (all_bracket_regions, values)
 
     @classmethod
     def check_add_view(cls, view, force=False):
@@ -303,9 +335,6 @@ class RainbowBracketsViewListener(sublime_plugin.ViewEventListener):
 
     # TODO: A better method to update dynamically.
     def on_modified(self):
-        sels = [r for r in self.view.sel()]
-        if len(sels) == 1 and sels[0].a == self.view.size():
-            return
         self.clear_bracket_regions()
         self.add_bracket_regions()
 
@@ -335,38 +364,29 @@ class RainbowBracketsViewListener(sublime_plugin.ViewEventListener):
     def find_all_bracket_regions(self):
         view, selector = self.view, self.selector
         opening, pairs = self.opening, self.pairs
-        number_levels = self.color_number
         full_text = view.substr(sublime.Region(0, view.size()))
 
-        matched_regions = []
-        matched_appends = []
-        for i in range(number_levels):
-            regions = list()
-            matched_regions.append(regions)
-            matched_appends.append(regions.append)
-
+        number_levels = self.color_number
+        matched_regions = [list() for i in range(number_levels)]
         bracket_stack, region_stack = [], []
-        region_stack_append = region_stack.append
-        bracket_stack_append = bracket_stack.append
-        region_stack_pop = region_stack.pop
-        bracket_stack_pop = bracket_stack.pop
 
+        all_bracket_regions = view.find_all(self.pattern)
         if selector:
-            for region in view.find_all(self.pattern):
+            for region in all_bracket_regions:
                 if view.match_selector(region.a, selector):
                     continue
 
                 bracket = full_text[region.a:region.b]
 
                 if bracket in opening:
-                    region_stack_append(region)
-                    bracket_stack_append(bracket)
+                    region_stack.append(region)
+                    bracket_stack.append(bracket)
 
                 elif bracket_stack and bracket == pairs[bracket_stack[-1]]:
-                    bracket_stack_pop()
+                    bracket_stack.pop()
                     level = len(bracket_stack) % number_levels
-                    matched_appends[level](region_stack_pop())
-                    matched_appends[level](region)
+                    matched_regions[level].append(region_stack.pop())
+                    matched_regions[level].append(region)
 
                 else:
                     self.mismatched_regions.append(region)
@@ -375,18 +395,19 @@ class RainbowBracketsViewListener(sublime_plugin.ViewEventListener):
                 bracket = full_text[region.a:region.b]
 
                 if bracket in opening:
-                    region_stack_append(region)
-                    bracket_stack_append(bracket)
+                    region_stack.append(region)
+                    bracket_stack.append(bracket)
 
                 elif bracket_stack and bracket == pairs[bracket_stack[-1]]:
-                    bracket_stack_pop()
+                    bracket_stack.pop()
                     level = len(bracket_stack) % number_levels
-                    matched_appends[level](region_stack_pop())
-                    matched_appends[level](region)
+                    matched_regions[level].append(region_stack.pop())
+                    matched_regions[level].append(region)
 
                 else:
                     self.mismatched_regions.append(region)
 
+        self.all_bracket_regions = all_bracket_regions
         self.matched_regions = [ls for ls in matched_regions if ls]
 
 
