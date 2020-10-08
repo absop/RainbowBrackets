@@ -6,7 +6,7 @@
 
 ## Introduction
 
-RainbowBrackets uses the brackets and colors that you give in the settings file, searches and highlights brackets in file views. Brackets at different levels will be dyed with different colors according to the settings. Colors are gave in a listed, and will be used repeatedly.
+RainbowBrackets uses the brackets and colors that you give in the settings file, searches and highlights brackets in file views. Brackets at different levels will be dyed with different colors according to the settings. Colors are gave in a list, and will be used repeatedly.
 
 parentheses, braces, brackets are treated as brackets. brackets are configured in setting file, it means you can use `OO` as a opening bracket and `CC` as a close bracket. some characters will cause many match error, can't serve as brackets, such as `<>`.
 
