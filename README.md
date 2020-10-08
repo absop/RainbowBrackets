@@ -3,58 +3,125 @@
 [![License][license-image]](/LICENSE)
 [![Downloads][packagecontrol-image]][packagecontrol-link]
 
-[中文](Chinese.md)
+
 ## Introduction
 
-Hi, welcome to use my plugins!
+RainbowBrackets uses the brackets and colors that you give in the settings file, searches and highlights brackets in file views. Brackets at different levels will be dyed with different colors according to the settings. Colors are gave in a listed, and will be used repeatedly.
 
-This plugin I wrote for **SublimeText** is to highlight brackets. It matches brackets you have added for the file type, then gives brackets at different levels different colors, in the cycle of the number of colors. colors are gave in the settings file, by default, there are 7 type of colors.
+parentheses, braces, brackets are treated as brackets. brackets are configured in setting file, it means you can use `OO` as a opening bracket and `CC` as a close bracket. some characters will cause many match error, can't serve as brackets, such as `<>`.
 
-parentheses, braces, brackets are treated as brackets. brackets are configured in setting file, it means you can use R as a opening bracket and L as a close bracket. But, not all strings can be used as brackets, it depends on the token rules which sublime_text has used in the file. The main reason for this is to ignore comments and strings.
 
-Some plugins such as **Color Highlighter** only works in `.tmTheme` formated color scheme, but you needn't worry about that when using this plugin, this plugin works well both in `.sublime-color-scheme` and `tmTheme` formated color scheme. Not only that，whenever you change you color scheme setting, it will readapt the new color scheme's background, without restarting sublime_text.
-
-Please don't mind my poor English. I'm trying to learn it.:-)
+## Example
+```
+{ [ 【 OO OO 《《》OOxCC》 CC CC 】 ] }
+```
+![](images/example.png)
 
 
 ## Installation
 
-Clone or download this repository to your SublimeText's **Packages** directory.
-Note that the directory name should be the name of this repository.
-Also, if you have installed Package Control, just use it, they have accepted my plugin.
+Clone or download this repository to your **Packages directory** of Sublime Text. Note that the directory name should be the name of this repository.
+
+If you have installed Package Control, press down <kbd>ctrl+shift+p</kbd> to get into the command palette, then, input the command `pcip (Package Control: Install Package)` and <kbd>Enter</kbd> to run it. Wait some time… After package infomations have been loaded remotely, input the name of this plugin `RainbowBrackets`, and press down <kbd>Enter</kbd> to install it.
 
 
 ## Usage
 
-The mode `"part"` will only highlight brackets around the cursor, with a threshold for the number of characters to be searched. For the reason of speed, you can use this mode, but I do not recommend it, you will know.
+### Settings
 
-Settings are easy to understand, if you have patience, try to change them and notice changes of views.
-
-## Add your language
-
-Adding setting
-```json
-"json": {}
-```
-to `"languages"` will make JSON file be supported. If you care about more, the following settings means, at a JSON file, "(" and ")" will be remove from global `"brackets"` setting, so it will get a better speed and sometimes is more advisable.
-files with extensions listed in `"extensions"` will be treated as JSON files.
-
-mode `"all"` indicated that when you open files treated as JSON files, the plugin will search full text to highlight brackets added in global `"brackets"` setting, except bracket-pairs whose left-part are listed in `"!brackets"`.
+Settings template
 
 ```json
-"json": {
-    "extensions": [
-        "json",
-        "sublime-settings",
-        "sublime-menu",
-        "sublime-build",
-        "sublime-keymap",
-        "sublime-color-scheme"
-    ],
-    "mode": "all",
-    "!brackets": ["("],
+{
+    "debug": false,
+
+    "brackets": {
+        // opening must in pairs
+        "pairs": {
+            "(": ")",
+            "[": "]",
+            "{": "}"
+        },
+
+        "filetypes": {
+            "default": {
+                "opening": ["(", "[", "{"],
+                "ignored_scopes": [
+                    "comment", "string"
+                ]
+            },
+
+            "scheme": {
+                "opening": ["(", "[", "{"],
+                "ignored_scopes": [
+                    "comment", "string", "constant.character", "symbol"
+                ],
+                "extensions": [
+                    "scm",
+                    "ss"
+                ]
+            },
+
+            "json": {
+                "opening": ["[", "{"],
+                "ignored_scopes": [
+                    "comment", "string"
+                ],
+                "extensions": [
+                    "json",
+                    "sublime-settings",
+                    "sublime-menu",
+                    "sublime-build",
+                    "sublime-keymap",
+                    "sublime-commands",
+                    "sublime-theme",
+                    "sublime-color-scheme"
+                ]
+            },
+            // Add custom file types here.
+        }
+    },
+
+    "rainbow_colors": {
+        "matched": [
+            "#FF0000",   /* level1  */
+            "#FF6A00",   /* level2  */
+            "#FFD800",   /* level3  */
+            "#00FF00",   /* level4  */
+            "#0094FF",   /* level5  */
+            "#0041FF",   /* level6  */
+            "#7D00E5"    /* level7  */
+        ],
+        "mismatched": "#FF0000"
+    }
 }
 ```
+
+- `ignored_scopes`: to ignore brackets in some scopes(such as comment, string).
+- `pairs`: global brackets pairs dict, opening brackets(left brackets) as keys and closing brackets(right brackets) as values.
+- `opening`: left parts of brackets pairs to be searched.
+
+### Commands
+- Preferences: RainbowBrackets Settings
+- RainbowBrackets: toggle debug
+- RainbowBrackets: make rainbow
+- RainbowBrackets: clear rainbow
+- RainbowBrackets: clear color schemes
+
+### Key bindings
+RainbowBrackets support fast opreating brackets, including `select`, `remove` and `transform`.
+
+| Keys                        | Description                                                  |
+| :-------------------------- | :----------------------------------------------------------- |
+| <kbd>ctrl+alt+9</kbd>       | Replace the brackets around the cursors with `()`            |
+| <kbd>ctrl+alt+0</kbd>       | Replace the brackets around the cursors with `()`            |
+| <kbd>ctrl+alt+[</kbd>       | Replace the brackets around the cursors with `[]`            |
+| <kbd>ctrl+alt+]</kbd>       | Replace the brackets around the cursors with `[]`            |
+| <kbd>ctrl+alt+shift+[</kbd> | Replace the brackets around the cursors with `{}`            |
+| <kbd>ctrl+alt+shift+]</kbd> | Replace the brackets around the cursors with `{}`            |
+| <kbd>ctrl+alt+r</kbd>       | Remove the brackets around the cursors                       |
+| <kbd>ctrl+alt+.</kbd>       | Remove the brackets around the cursors and select the text within the brackets |
+| <kbd>ctrl+alt+,</kbd>       | Select the brackets around the cursors and the text within the brackets |
 
 
 ## Screenshots

@@ -20,7 +20,12 @@
         "args": { "operation": "transform", "to": "[" }
     },
     {
-        "keys": ["ctrl+alt+b"],
+        "keys": ["ctrl+alt+shift+["],
+        "command": "operate_brackets",
+        "args": { "operation": "transform", "to": "{" }
+    },
+    {
+        "keys": ["ctrl+alt+shift+]"],
         "command": "operate_brackets",
         "args": { "operation": "transform", "to": "{" }
     },

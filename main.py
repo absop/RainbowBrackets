@@ -12,11 +12,12 @@ SETTINGS_FILE = "RainbowBrackets.sublime-settings"
 
 class Debuger():
     debug = False
+    employer = "RainbowBrackets"
 
     @classmethod
     def print(cls, *args):
         if cls.debug:
-            print("RainbowBrackets:", *args, sep="\n\t")
+            print("%s:" % cls.employer, *args, sep="\n\t")
 
     @classmethod
     def pprint(cls, obj):
@@ -27,7 +28,7 @@ class Debuger():
                 return json.JSONEncoder.default(self, obj)
 
         if cls.debug:
-            print("RainbowBrackets:", json.dumps(obj,
+            print("%s:" % cls.employer, json.dumps(obj,
                 cls=setEncoder, indent=4,
                 sort_keys=True, ensure_ascii=False))
 

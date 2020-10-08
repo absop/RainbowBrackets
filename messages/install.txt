@@ -1,0 +1,11 @@
+RainbowBrackets
+---------------
+`RainbowBrackets` is a brackets highlighting plugin which color brackets at different level with different colors.
+
+
+## Read usage
+    Preferences>Package Settings>RainbowBrackets>README
+
+## Custom settings
+    Preferences>Package Settings>RainbowBrackets>Settings
+    ctrl+shift+p, PRBSetting...
