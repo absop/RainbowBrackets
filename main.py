@@ -116,16 +116,33 @@ class RainbowBracketsOperationsCommand(sublime_plugin.TextCommand):
         return sublime.Region(left.a, right.b)
 
     def find_cursor_brackets(self, trees):
-        def contains(tree, region):
-            a, b = region.begin(), region.end()
-            return tree[0].a < a and b < tree[1].b
-
         def find_nearest(trees, region):
-            for tree in trees:
-                if contains(tree, region):
-                    return find_nearest(tree[2], region) or tree[:2]
-            else:
-                return None
+            """ The Algorithm of Binary Search
+            oa: left border of the opening bracket
+            cb: right border of the closing bracket
+            """
+            a, b = region.begin(), region.end()
+            pair = None
+            while True:
+                found_closer = False
+                lo, hi = 0, len(trees) - 1
+                while lo <= hi:
+                    mi = (lo + hi) >> 1
+                    tr = trees[mi]
+                    oa = tr[OPENING].a
+                    cb = tr[CLOSING].b
+                    if cb < a:
+                        lo = mi + 1
+                    elif oa > b:
+                        hi = mi - 1
+                    else:
+                        if oa < a and b < cb:
+                            found_closer = True
+                            trees = tr[CONTAIN]
+                            pair = (tr[OPENING], tr[CLOSING])
+                        break
+                if not found_closer:
+                    return pair
 
         pairs = []
         for region in self.view.sel():
