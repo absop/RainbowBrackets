@@ -1,47 +1,47 @@
 [
     {
         "keys": ["ctrl+alt+9"],
-        "command": "operate_brackets",
+        "command": "rainbow_brackets_operations",
         "args": { "operation": "transform", "to": "(" }
     },
     {
         "keys": ["ctrl+alt+0"],
-        "command": "operate_brackets",
+        "command": "rainbow_brackets_operations",
         "args": { "operation": "transform", "to": "(" }
     },
     {
         "keys": ["ctrl+alt+["],
-        "command": "operate_brackets",
+        "command": "rainbow_brackets_operations",
         "args": { "operation": "transform", "to": "[" }
     },
     {
         "keys": ["ctrl+alt+]"],
-        "command": "operate_brackets",
+        "command": "rainbow_brackets_operations",
         "args": { "operation": "transform", "to": "[" }
     },
     {
         "keys": ["ctrl+alt+shift+["],
-        "command": "operate_brackets",
+        "command": "rainbow_brackets_operations",
         "args": { "operation": "transform", "to": "{" }
     },
     {
         "keys": ["ctrl+alt+shift+]"],
-        "command": "operate_brackets",
+        "command": "rainbow_brackets_operations",
         "args": { "operation": "transform", "to": "{" }
     },
     {
         "keys": ["ctrl+alt+r"],
-        "command": "operate_brackets",
+        "command": "rainbow_brackets_operations",
         "args": { "operation": "remove", "select_content": false }
     },
     {
         "keys": ["ctrl+alt+."],
-        "command": "operate_brackets",
+        "command": "rainbow_brackets_operations",
         "args": { "operation": "remove", "select_content": true }
     },
     {
         "keys": ["ctrl+alt+,"],
-        "command": "operate_brackets",
+        "command": "rainbow_brackets_operations",
         "args": { "operation": "select" },
     }
 ]
