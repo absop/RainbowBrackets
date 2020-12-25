@@ -193,8 +193,8 @@ class RainbowBracketsViewListener():
 
     def check_bracket_regions(self):
         if self.coloring:
-            self.clear_bracket_regions()
             self.construct_bracket_trees_and_lists()
+            self.clear_bracket_regions()
             if self.bracket_regions_lists:
                 for level, regions in enumerate(self.bracket_regions_lists):
                     self.view.add_regions(
@@ -212,8 +212,7 @@ class RainbowBracketsViewListener():
             self.construct_bracket_trees()
 
     def clear_bracket_regions(self):
-        if self.bad_bracket_regions:
-            self.view.erase_regions(self.bad_key)
+        self.view.erase_regions(self.bad_key)
         for key in self.keys:
             self.view.erase_regions(key)
 
