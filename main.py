@@ -268,8 +268,8 @@ class RainbowBracketsViewListener():
         found_regions = view.find_all(self.pattern)
         if not found_regions:
             return
-        selector       = self.selector
         brackets       = self.brackets
+        selector       = self.selector
         number_levels  = self.color_number
         match_selector = view.match_selector
         view_full_text = view.substr(sublime.Region(0, view.size()))
