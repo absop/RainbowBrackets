@@ -327,6 +327,7 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
             for key in default.keys():
                 if key not in values:
                     values[key] = default[key]
+            values["extensions"] = values.get("extensions", [])
 
         filetypes["default"] = default
 
