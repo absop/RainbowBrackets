@@ -176,11 +176,6 @@ class RainbowBracketsViewListener():
         Debuger.print("exiting from file:", self.view.file_name())
         self.clear_bracket_regions()
 
-    def make_rainbow(self):
-        if self.coloring is False:
-            self.coloring = True
-            self.check_bracket_regions()
-
     def load(self):
         start = time.time()
         self.check_bracket_regions()
@@ -425,8 +420,15 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
 
     @classmethod
     def color_view(cls, view):
-        listener = cls.get_view_listener(view) or cls.force_add_listener(view)
-        listener and listener.make_rainbow()
+        listener = cls.get_view_listener(view)
+        if listener and not listener.coloring:
+            listener.coloring = True
+            listener.check_bracket_regions()
+        elif not listener:
+           listener = cls.force_add_listener(view)
+           if listener:
+                listener.coloring = True
+                listener.load()
 
     @classmethod
     def sweep_view(cls, view):
