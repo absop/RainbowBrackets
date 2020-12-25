@@ -228,6 +228,7 @@ class RainbowBracketsViewListener():
         brackets       = self.brackets
         selector       = self.selector
         number_levels  = self.color_number
+        match_selector = view.match_selector
         view_full_text = view.substr(sublime.Region(0, view.size()))
 
         opening_stack          = []
@@ -251,7 +252,7 @@ class RainbowBracketsViewListener():
 
         if selector:
             for region in found_regions:
-                if view.match_selector(region.a, selector):
+                if match_selector(region.a, selector):
                     continue
                 input_bracket_region(region)
         else:
@@ -270,6 +271,7 @@ class RainbowBracketsViewListener():
         selector       = self.selector
         brackets       = self.brackets
         number_levels  = self.color_number
+        match_selector = view.match_selector
         view_full_text = view.substr(sublime.Region(0, view.size()))
 
         opening_stack          = []
@@ -302,7 +304,7 @@ class RainbowBracketsViewListener():
 
         if selector:
             for region in found_regions:
-                if view.match_selector(region.a, selector):
+                if match_selector(region.a, selector):
                     continue
                 input_bracket_region(region)
         else:
