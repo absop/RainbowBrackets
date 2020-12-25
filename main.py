@@ -6,6 +6,7 @@ import time
 import sublime
 import sublime_plugin
 
+from sublime import Region
 
 SETTINGS_FILE = "RainbowBrackets.sublime-settings"
 
@@ -97,7 +98,7 @@ class RainbowBracketsOperationsCommand(sublime_plugin.TextCommand):
                 for p in pairs:
                     begin = p[0].a - regions.index(p[0])
                     end = p[1].a - regions.index(p[1])
-                    selections.append(sublime.Region(begin, end))
+                    selections.append(Region(begin, end))
                 view.sel().add_all(selections)
 
         elif operation == "transform":
@@ -113,7 +114,7 @@ class RainbowBracketsOperationsCommand(sublime_plugin.TextCommand):
                 view.replace(edit, region, content)
 
     def cover(self, left, right):
-        return sublime.Region(left.a, right.b)
+        return Region(left.a, right.b)
 
     def find_cursor_brackets(self, trees):
         def find_nearest(trees, region):
@@ -170,6 +171,7 @@ class RainbowBracketsViewListener():
         self.bad_bracket_regions   = []
         self.bracket_regions_lists = []
         self.bracket_regions_trees = []
+        self.regexp = re.compile(self.pattern)
         self.view = view
 
     def __del__(self):
@@ -216,15 +218,12 @@ class RainbowBracketsViewListener():
     def construct_bracket_trees(self):
         self.bracket_regions_trees = []
 
-        view = self.view
-        found_regions = view.find_all(self.pattern)
-        if not found_regions:
-            return
         brackets       = self.brackets
         selector       = self.selector
         number_levels  = self.color_number
-        match_selector = view.match_selector
-        view_full_text = view.substr(sublime.Region(0, view.size()))
+        match_selector = self.view.match_selector
+        view_full_text = self.view.substr(Region(0, self.view.size()))
+        match_iterator = self.regexp.finditer(view_full_text)
 
         opening_stack          = []
         tree_node_stack        = [[None, None, self.bracket_regions_trees]]
@@ -233,8 +232,7 @@ class RainbowBracketsViewListener():
         tree_node_stack_pop = tree_node_stack.pop
         opening_stack_pop = opening_stack.pop
 
-        def input_bracket_region(region):
-            bracket = view_full_text[region.a:region.b]
+        def handle(bracket, region):
             if bracket in brackets:
                 tree_node_stack_append([region, None, []])
                 opening_stack_append(bracket)
@@ -245,29 +243,19 @@ class RainbowBracketsViewListener():
                 node[CLOSING] = region
                 tree_node_stack[-1][CONTAIN].append(node)
 
-        if selector:
-            for region in found_regions:
-                if match_selector(region.a, selector):
-                    continue
-                input_bracket_region(region)
-        else:
-            for region in found_regions:
-                input_bracket_region(region)
+        self.handle_matches(selector, match_selector, match_iterator, handle)
 
     def construct_bracket_trees_and_lists(self):
         self.bad_bracket_regions   = []
         self.bracket_regions_lists = []
         self.bracket_regions_trees = []
 
-        view = self.view
-        found_regions = view.find_all(self.pattern)
-        if not found_regions:
-            return
         brackets       = self.brackets
         selector       = self.selector
         number_levels  = self.color_number
-        match_selector = view.match_selector
-        view_full_text = view.substr(sublime.Region(0, view.size()))
+        match_selector = self.view.match_selector
+        view_full_text = self.view.substr(Region(0, self.view.size()))
+        match_iterator = self.regexp.finditer(view_full_text)
 
         opening_stack          = []
         tree_node_stack        = [[None, None, self.bracket_regions_trees]]
@@ -279,9 +267,7 @@ class RainbowBracketsViewListener():
         regions_by_level = [list() for i in range(number_levels)]
         appends_by_level = [rs.append for rs in regions_by_level]
 
-        def input_bracket_region(region):
-            bracket = view_full_text[region.a:region.b]
-
+        def handle(bracket, region):
             if bracket in brackets:
                 tree_node_stack_append([region, None, []])
                 opening_stack_append(bracket)
@@ -297,16 +283,18 @@ class RainbowBracketsViewListener():
             else:
                 self.bad_bracket_regions.append(region)
 
-        if selector:
-            for region in found_regions:
-                if match_selector(region.a, selector):
-                    continue
-                input_bracket_region(region)
-        else:
-            for region in found_regions:
-                input_bracket_region(region)
-
+        self.handle_matches(selector, match_selector, match_iterator, handle)
         self.bracket_regions_lists = [ls for ls in regions_by_level if ls]
+
+    def handle_matches(self, selector, match_selector, match_iterator, handle):
+        if selector:
+            for m in match_iterator:
+                if match_selector(m.span()[0], selector):
+                    continue
+                handle(m.group(), Region(*m.span()))
+        else:
+            for m in match_iterator:
+                handle(m.group(), Region(*m.span()))
 
 
 class RainbowBracketsViewManager(sublime_plugin.EventListener):
