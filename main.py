@@ -429,7 +429,7 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
     @classmethod
     def get_view_bracket_pairs(cls, view):
         listener = cls.get_view_listener(view)
-        return listener and listener.pairs
+        return listener and listener.brackets
 
     @classmethod
     def get_view_bracket_trees(cls, view):
