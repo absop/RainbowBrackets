@@ -74,38 +74,34 @@ class RainbowBracketsControllerCommand(sublime_plugin.WindowCommand):
 
 class RainbowBracketsOperationsCommand(sublime_plugin.TextCommand):
     def run(self, edit, operation="", to="", select_content=True):
-        def extend_region_to(p):
-            while True:
-                cover = self.cover(p)
-                if starts_with_expected_word(p):
-                    break
-                p = self.find_nearest(trees, cover)
-                if p is None:
-                    break
-            return cover
+        def find_cursor_brackets(accept=lambda x: True):
+            last_bracket = None
+            for region in view.sel():
+                bracket = self.find_nearest(trees, region, accept)
+                if bracket is None or bracket == last_bracket:
+                    continue
+                else:
+                    last_bracket = bracket
+                    yield bracket
 
-        def starts_with_expected_word(p):
-            point = p[0].end()
-            text = view.substr(Region(point, point + length))
-            return re.match(regexp, text) is not None
-
-        regexp = to and to + r'\b'
-        length = len(regexp)
-        view = self.view
-
+        view  = self.view
         trees = RainbowBracketsViewManager.get_view_bracket_trees(view)
         if not trees:
             return
 
-        cursor_brackets = self.find_cursor_brackets(trees)
-
         if operation == "select":
-            for p in cursor_brackets:
-                region = extend_region_to(p)
+            def starts_with_expected_word(p):
+                point = p[0].end()
+                text = view.substr(Region(point, point + length))
+                return re.match(regexp, text) is not None
+            regexp = to and to + r'\b'
+            length = len(regexp)
+            for p in find_cursor_brackets(accept=starts_with_expected_word):
+                region = self.cover(p)
                 view.sel().add(region)
 
         elif operation == "remove":
-            pairs = [p for p in cursor_brackets]
+            pairs = [p for p in find_cursor_brackets()]
             regions = [r for p in pairs for r in p]
             regions.sort()
             for r in reversed(regions):
@@ -121,7 +117,7 @@ class RainbowBracketsOperationsCommand(sublime_plugin.TextCommand):
         elif operation == "transform":
             mapping = RainbowBracketsViewManager.get_view_bracket_pairs(view)
             replace_list = []
-            for p in cursor_brackets:
+            for p in find_cursor_brackets():
                 if view.substr(p[0]) == to:
                     continue
                 replace_list.append((p[0], to))
@@ -130,27 +126,16 @@ class RainbowBracketsOperationsCommand(sublime_plugin.TextCommand):
             for region, content in replace_list:
                 view.replace(edit, region, content)
 
-    def find_cursor_brackets(self, trees):
-        pairs = []
-        for region in self.view.sel():
-            pair = self.find_nearest(trees, region)
-            if pair is not None:
-                if pairs and pair == pairs[-1]:
-                    continue
-                else:
-                    pairs.append(pair)
-        return pairs
-
     def cover(self, bracket_pair):
         return Region(bracket_pair[0].a, bracket_pair[1].b)
 
-    def find_nearest(self, trees, region):
+    def find_nearest(self, trees, region, accept=lambda x: True):
         """ The Algorithm of Binary Search
         oa: left border of the opening bracket
         cb: right border of the closing bracket
         """
         a, b = region.begin(), region.end()
-        pair = None
+        bracket = None
         while True:
             found_closer = False
             lo, hi = 0, len(trees) - 1
@@ -167,10 +152,12 @@ class RainbowBracketsOperationsCommand(sublime_plugin.TextCommand):
                     if oa < a and b < cb:
                         found_closer = True
                         trees = tr[CONTAIN]
-                        pair = (tr[OPENING], tr[CLOSING])
+                        p = (tr[OPENING], tr[CLOSING])
+                        if accept(p):
+                            bracket = p
                     break
             if not found_closer:
-                return pair
+                return bracket
 
 
 class RainbowBracketsViewListener():
