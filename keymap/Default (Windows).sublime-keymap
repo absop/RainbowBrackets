@@ -43,5 +43,10 @@
         "keys": ["ctrl+alt+,"],
         "command": "rainbow_brackets_operations",
         "args": { "operation": "select" },
+    },
+    {
+        "keys": ["ctrl+alt+shift+,"],
+        "command": "rainbow_brackets_operations",
+        "args": { "operation": "select", "to": "define" },
     }
 ]
