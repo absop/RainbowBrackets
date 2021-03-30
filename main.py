@@ -74,10 +74,10 @@ class RainbowBracketsControllerCommand(sublime_plugin.WindowCommand):
 
 class RainbowBracketsOperationsCommand(sublime_plugin.TextCommand):
     def run(self, edit, operation="", to="", select_content=True):
-        def find_cursor_brackets(accept=lambda x: True):
+        def find_cursor_brackets(regex=None):
             last_bracket = None
             for region in view.sel():
-                bracket = self.find_nearest(trees, region, accept)
+                bracket = self.find_nearest(trees, region, regex)
                 if bracket is None or bracket == last_bracket:
                     continue
                 else:
@@ -90,19 +90,15 @@ class RainbowBracketsOperationsCommand(sublime_plugin.TextCommand):
             return
 
         if operation == "select":
-            def starts_with_expected_word(p):
-                point = p[0].end()
-                text = view.substr(Region(point, point + length))
-                return re.match(regexp, text) is not None
-            regexp = to and to + r'\b'
-            length = len(regexp)
-            for p in find_cursor_brackets(accept=starts_with_expected_word):
+            regex = to and re.compile(to + r'\b') or None
+            for p in find_cursor_brackets(regex=regex):
                 region = self.cover(p)
                 view.sel().add(region)
 
         elif operation == "remove":
             pairs = [p for p in find_cursor_brackets()]
             regions = [r for p in pairs for r in p]
+            print(regions)
             regions.sort()
             for r in reversed(regions):
                 view.erase(edit, r)
@@ -129,13 +125,31 @@ class RainbowBracketsOperationsCommand(sublime_plugin.TextCommand):
     def cover(self, bracket_pair):
         return Region(bracket_pair[0].a, bracket_pair[1].b)
 
-    def find_nearest(self, trees, region, accept=lambda x: True):
-        """ The Algorithm of Binary Search
-        oa: left border of the opening bracket
-        cb: right border of the closing bracket
-        """
-        a, b = region.begin(), region.end()
+    def find_nearest(self, trees, r, regex):
+        pairs = self.binary_path_search(trees, r.begin(), r.end())
         bracket = None
+        if pairs and regex is not None:
+            for p in reversed(pairs):
+                point = p[0].end()
+                text = self.view.substr(Region(point, point + 31))
+                if regex.match(text) is not None:
+                    bracket = p
+                    break
+            else:
+                bracket = pairs[0]
+        elif pairs:
+            bracket = pairs[-1]
+
+        if bracket is None and r.empty():
+            for tree in trees:
+                if (tree[OPENING].a == r.a or
+                    tree[CLOSING].b == r.a):
+                    bracket = (tree[OPENING], tree[CLOSING])
+                    break
+        return bracket
+
+    def binary_path_search(self, trees, r_begin, r_end):
+        bracket_path = []
         while True:
             found_closer = False
             lo, hi = 0, len(trees) - 1
@@ -144,20 +158,20 @@ class RainbowBracketsOperationsCommand(sublime_plugin.TextCommand):
                 tr = trees[mi]
                 oa = tr[OPENING].a
                 cb = tr[CLOSING].b
-                if cb < a:
+                if cb < r_begin:
                     lo = mi + 1
-                elif oa > b:
+                elif oa > r_end:
                     hi = mi - 1
                 else:
-                    if oa < a and b < cb:
+                    if oa < r_begin and r_end < cb:
                         found_closer = True
                         trees = tr[CONTAIN]
                         p = (tr[OPENING], tr[CLOSING])
-                        if accept(p):
-                            bracket = p
+                        bracket_path.append(p)
                     break
             if not found_closer:
-                return bracket
+                break
+        return bracket_path
 
 
 class RainbowBracketsViewListener():

@@ -47,6 +47,6 @@
     {
         "keys": ["ctrl+alt+shift+,"],
         "command": "rainbow_brackets_operations",
-        "args": { "operation": "select", "to": "define" },
+        "args": { "operation": "select", "to": "cond|define|lambda|let" },
     }
 ]
