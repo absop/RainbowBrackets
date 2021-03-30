@@ -98,7 +98,6 @@ class RainbowBracketsOperationsCommand(sublime_plugin.TextCommand):
         elif operation == "remove":
             pairs = [p for p in find_cursor_brackets()]
             regions = [r for p in pairs for r in p]
-            print(regions)
             regions.sort()
             for r in reversed(regions):
                 view.erase(edit, r)
