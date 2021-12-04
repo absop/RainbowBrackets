@@ -35,71 +35,71 @@ Settings template
 {
     "debug": false,
 
-    "brackets": {
-        // opening must in pairs
-        "pairs": {
+    "default_config": {
+        "bracket_pairs": {
             "(": ")",
             "[": "]",
             "{": "}"
         },
 
-        "filetypes": {
-            "default": {
-                "opening": ["(", "[", "{"],
-                "ignored_scopes": [
-                    "comment", "string"
-                ]
-            },
+        "coloring": false,
 
-            "scheme": {
-                "opening": ["(", "[", "{"],
-                "ignored_scopes": [
-                    "comment", "string", "constant.character", "symbol"
-                ],
-                "extensions": [
-                    "scm",
-                    "ss"
-                ]
-            },
+        "enabled": true,
 
-            "json": {
-                "opening": ["[", "{"],
-                "ignored_scopes": [
-                    "comment", "string"
-                ],
-                "extensions": [
-                    "json",
-                    "sublime-settings",
-                    "sublime-menu",
-                    "sublime-build",
-                    "sublime-keymap",
-                    "sublime-commands",
-                    "sublime-theme",
-                    "sublime-color-scheme"
-                ]
-            },
-            // Add custom file types here.
-        }
+        "ignored_scopes": [
+            "comment",
+            "string",
+            "constant"
+        ],
+
+        "rainbow_colors": [
+            "#FF0000", // level0
+            "#FF6A00", // level1
+            "#FFD800", // level2
+            "#00FF00", // level3
+            "#0094FF", // level4
+            "#0041FF", // level5
+            "#7D00E5"  // level6
+        ],
+
+        "mismatch_color": "#FF0000"
     },
 
-    "rainbow_colors": {
-        "matched": [
-            "#FF0000",   /* level1  */
-            "#FF6A00",   /* level2  */
-            "#FFD800",   /* level3  */
-            "#00FF00",   /* level4  */
-            "#0094FF",   /* level5  */
-            "#0041FF",   /* level6  */
-            "#7D00E5"    /* level7  */
-        ],
-        "mismatched": "#FF0000"
+    "syntax_specific": {
+        "Scheme": {
+            "extensions": [".scm", ".ss"],
+
+            "ignored_scopes": [
+                "comment", "string", "constant", "symbol"
+            ]
+        },
+
+        "JSON": {
+            "bracket_pairs": {
+                "{": "}",
+                "[": "]"
+            },
+
+            "extensions": [
+                ".json",
+                ".sublime-build",
+                ".sublime-color-scheme",
+                ".sublime-commands",
+                ".sublime-keymap",
+                ".sublime-menu",
+                ".sublime-settings",
+                ".sublime-theme",
+            ],
+
+            "ignored_scopes": [
+                "comment", "string"
+            ]
+        }
     }
 }
 ```
 
 - `ignored_scopes`: to ignore brackets in some scopes(such as comment, string).
-- `pairs`: global brackets pairs dict, opening brackets(left brackets) as keys and closing brackets(right brackets) as values.
-- `opening`: left parts of brackets pairs to be searched.
 
 ### Commands
 - Preferences: RainbowBrackets Settings

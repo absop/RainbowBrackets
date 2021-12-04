@@ -1,17 +1,23 @@
 {
     "debug": false,
 
-    "default": {
+    "default_config": {
         "bracket_pairs": {
             "(": ")",
             "[": "]",
             "{": "}"
         },
+
+        "coloring": false,
+
+        "enabled": true,
+
         "ignored_scopes": [
             "comment",
-            "string"
+            "string",
+            "constant"
         ],
-        "coloring": false,
+
         "rainbow_colors": [
             "#FF0000", // level0
             "#FF6A00", // level1
@@ -21,39 +27,38 @@
             "#0041FF", // level5
             "#7D00E5"  // level6
         ],
+
         "mismatch_color": "#FF0000"
     },
 
-    "filetypes": {
-        "scheme": {
-            "coloring": true,
+    "syntax_specific": {
+        "Scheme": {
+            "extensions": [".scm", ".ss"],
+
             "ignored_scopes": [
-                "comment", "string", "constant.character", "symbol"
-            ],
-            "extensions": [
-                "scm",
-                "ss"
+                "comment", "string", "constant", "symbol"
             ]
         },
 
-        "json": {
-            "coloring": true,
+        "JSON": {
             "bracket_pairs": {
                 "{": "}",
                 "[": "]"
             },
+
+            "extensions": [
+                ".json",
+                ".sublime-build",
+                ".sublime-color-scheme",
+                ".sublime-commands",
+                ".sublime-keymap",
+                ".sublime-menu",
+                ".sublime-settings",
+                ".sublime-theme",
+            ],
+
             "ignored_scopes": [
                 "comment", "string"
-            ],
-            "extensions": [
-                "json",
-                "sublime-settings",
-                "sublime-menu",
-                "sublime-build",
-                "sublime-keymap",
-                "sublime-commands",
-                "sublime-theme",
-                "sublime-color-scheme"
             ]
         }
     }

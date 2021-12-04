@@ -10,19 +10,6 @@ from sublime import Region
 
 SETTINGS_FILE = "RainbowBrackets.sublime-settings"
 
-"""
-For performance, we use list instead of class
-A BrkTree is a 3-elements list
-struct BrkTree: [
-    1. opening::Region
-    2. closing::Region
-    3. contain::list
-]
-"""
-OPENING = 0
-CLOSING = 1
-CONTAIN = 2
-
 
 class Debuger():
     debug = False
@@ -45,6 +32,15 @@ class Debuger():
             print("%s:" % cls.employer, json.dumps(obj,
                 cls=setEncoder, indent=4,
                 sort_keys=True, ensure_ascii=False))
+
+
+class Tree:
+    __slots__ = ["opening", "closing", "contain"]
+
+    def __init__(self, opening, closing, contain):
+        self.opening = opening
+        self.closing = closing
+        self.contain = contain
 
 
 class RainbowBracketsControllerCommand(sublime_plugin.WindowCommand):
@@ -141,9 +137,9 @@ class RainbowBracketsOperationsCommand(sublime_plugin.TextCommand):
 
         if bracket is None and r.empty():
             for tree in trees:
-                if (tree[OPENING].a == r.a or
-                    tree[CLOSING].b == r.a):
-                    bracket = (tree[OPENING], tree[CLOSING])
+                if (tree.opening.a == r.a or
+                    tree.closing.b == r.a):
+                    bracket = (tree.opening, tree.closing)
                     break
         return bracket
 
@@ -155,8 +151,8 @@ class RainbowBracketsOperationsCommand(sublime_plugin.TextCommand):
             while lo <= hi:
                 mi = (lo + hi) >> 1
                 tr = trees[mi]
-                oa = tr[OPENING].a
-                cb = tr[CLOSING].b
+                oa = tr.opening.a
+                cb = tr.closing.b
                 if cb < r_begin:
                     lo = mi + 1
                 elif oa > r_end:
@@ -164,8 +160,8 @@ class RainbowBracketsOperationsCommand(sublime_plugin.TextCommand):
                 else:
                     if oa < r_begin and r_end < cb:
                         found_closer = True
-                        trees = tr[CONTAIN]
-                        p = (tr[OPENING], tr[CLOSING])
+                        trees = tr.contain
+                        p = (tr.opening, tr.closing)
                         bracket_path.append(p)
                     break
             if not found_closer:
@@ -174,20 +170,21 @@ class RainbowBracketsOperationsCommand(sublime_plugin.TextCommand):
 
 
 class RainbowBracketsViewListener():
-    def __init__(self, view, filetype):
-        self.bad_key   = filetype["bad_key"]
-        self.bad_scope = filetype["bad_scope"]
-        self.coloring  = filetype["coloring"]
-        self.keys      = filetype["keys"]
-        self.brackets  = filetype["bracket_pairs"]
-        self.pattern   = filetype["pattern"]
-        self.scopes    = filetype["scopes"]
-        self.selector  = filetype["selector"]
+    def __init__(self, view, syntax, config):
+        self.bad_key   = config["bad_key"]
+        self.bad_scope = config["bad_scope"]
+        self.coloring  = config["coloring"]
+        self.keys      = config["keys"]
+        self.brackets  = config["bracket_pairs"]
+        self.pattern   = config["pattern"]
+        self.scopes    = config["scopes"]
+        self.selector  = config["selector"]
         self.color_number = len(self.keys)
         self.bad_bracket_regions   = []
         self.bracket_regions_lists = []
         self.bracket_regions_trees = []
         self.regexp = re.compile(self.pattern)
+        self.syntax = syntax
         self.view = view
 
     def __del__(self):
@@ -199,10 +196,12 @@ class RainbowBracketsViewListener():
         self.check_bracket_regions()
         end = time.time()
         Debuger.print(
-            "loaded file: " + (self.view.file_name() or "untitled"),
-            "pattern: " + self.pattern,
-            "selector: " + self.selector,
-            "cost time: %.5f" % (end - start))
+            f"loaded file: {(self.view.file_name() or 'untitled')}",
+            f"pattern: {self.pattern}",
+            f"selector: {self.selector}",
+            f"syntax: {self.syntax}",
+            f"coloring: {self.coloring}",
+            f"cost time: {end - start:>.2f}")
 
     # TODO: Update the bracket trees dynamically rather
     # than reconstruct them from beginning every time.
@@ -242,7 +241,7 @@ class RainbowBracketsViewListener():
         match_iterator = self.regexp.finditer(view_full_text)
 
         opening_stack          = []
-        tree_node_stack        = [[None, None, self.bracket_regions_trees]]
+        tree_node_stack        = [Tree(None, None, self.bracket_regions_trees)]
         tree_node_stack_append = tree_node_stack.append
         opening_stack_append = opening_stack.append
         tree_node_stack_pop = tree_node_stack.pop
@@ -250,14 +249,14 @@ class RainbowBracketsViewListener():
 
         def handle(bracket, region):
             if bracket in brackets:
-                tree_node_stack_append([region, None, []])
+                tree_node_stack_append(Tree(region, None, []))
                 opening_stack_append(bracket)
 
             elif opening_stack and bracket == brackets[opening_stack[-1]]:
                 opening_stack_pop()
                 node = tree_node_stack_pop()
-                node[CLOSING] = region
-                tree_node_stack[-1][CONTAIN].append(node)
+                node.closing = region
+                tree_node_stack[-1].contain.append(node)
 
         self.handle_matches(selector, match_selector, match_iterator, handle)
 
@@ -274,7 +273,7 @@ class RainbowBracketsViewListener():
         match_iterator = self.regexp.finditer(view_full_text)
 
         opening_stack          = []
-        tree_node_stack        = [[None, None, self.bracket_regions_trees]]
+        tree_node_stack        = [Tree(None, None, self.bracket_regions_trees)]
         tree_node_stack_append = tree_node_stack.append
         opening_stack_append = opening_stack.append
         tree_node_stack_pop = tree_node_stack.pop
@@ -285,17 +284,17 @@ class RainbowBracketsViewListener():
 
         def handle(bracket, region):
             if bracket in brackets:
-                tree_node_stack_append([region, None, []])
+                tree_node_stack_append(Tree(region, None, []))
                 opening_stack_append(bracket)
 
             elif opening_stack and bracket == brackets[opening_stack[-1]]:
                 opening_stack_pop()
                 node = tree_node_stack_pop()
-                node[CLOSING] = region
-                tree_node_stack[-1][CONTAIN].append(node)
+                node.closing = region
+                tree_node_stack[-1].contain.append(node)
                 level = len(opening_stack) % number_levels
-                appends_by_level[level](node[OPENING])
-                appends_by_level[level](node[CLOSING])
+                appends_by_level[level](node.opening)
+                appends_by_level[level](node.closing)
             else:
                 self.bad_bracket_regions.append(region)
 
@@ -314,43 +313,55 @@ class RainbowBracketsViewListener():
 
 
 class RainbowBracketsViewManager(sublime_plugin.EventListener):
-    is_ready = False
-    filetypes = {}
+    configs_by_stx = {}
+    syntaxes_by_ext = {}
     view_listeners = {}
+    is_ready = False
 
     @classmethod
-    def load_filetypes(cls, settings):
+    def load_config(cls, settings):
         cls.is_ready = False
 
         Debuger.debug = settings.get("debug", False)
 
-        default = settings.get("default", {})
-        filetypes = settings.get("filetypes", {})
+        default_config = settings.get("default_config", {})
+        configs_by_stx = settings.get("syntax_specific", {})
+        syntaxes_by_ext = {}
 
-        for ftype, values in filetypes.items():
-            for key in default.keys():
-                if key not in values:
-                    values[key] = default[key]
-            values["extensions"] = values.get("extensions", [])
+        for syntax, config in configs_by_stx.items():
+            for key in ("enabled", "coloring"):
+                if key not in config:
+                    config[key] = True
+            for key in default_config.keys():
+                if key not in config:
+                    config[key] = default_config[key]
+            for ext in config.get("extensions", []):
+                syntaxes_by_ext[ext] = syntax
 
-        filetypes["default"] = default
+        if "coloring" not in default_config:
+            default_config["coloring"] = False
+        if "enabled" not in default_config:
+            default_config["enabled"] = True
 
-        for ftype, values in filetypes.items():
-            levels = range(len(values["rainbow_colors"]))
-            values["keys"]   = ["rb_%s_level%d" % (ftype, i) for i in levels]
-            values["scopes"] = ["level%d.%s.rb" % (i, ftype) for i in levels]
-            values["bad_key"]   = "rb_%s_mismatch" % ftype
-            values["bad_scope"] = "mismatch.%s.rb" % ftype
+        configs_by_stx["<default>"] = default_config
 
-            pairs = values["bracket_pairs"]
+        for syntax, config in configs_by_stx.items():
+            levels = range(len(config["rainbow_colors"]))
+            config["keys"]   = ["rb_l%d_%s" % (i, syntax) for i in levels]
+            config["scopes"] = ["%s.l%d.rb" % (syntax, i) for i in levels]
+            config["bad_key"]   = "rb_mismatch_%s" % syntax
+            config["bad_scope"] = "%s.mismatch.rb" % syntax
+
+            pairs = config["bracket_pairs"]
             brackets = sorted(list(pairs.keys()) + list(pairs.values()))
 
-            values["pattern"]  = "|".join(re.escape(b) for b in brackets)
-            values["selector"] = "|".join(values.pop("ignored_scopes"))
+            config["pattern"]  = "|".join(re.escape(b) for b in brackets)
+            config["selector"] = "|".join(config.pop("ignored_scopes"))
 
-        Debuger.pprint(filetypes)
+        Debuger.pprint(configs_by_stx)
 
-        cls.filetypes = filetypes
+        cls.syntaxes_by_ext = syntaxes_by_ext
+        cls.configs_by_stx = configs_by_stx
         cls.is_ready = True
 
     @classmethod
@@ -361,39 +372,30 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
                 sublime.error_message(msg)
             return
 
-        def check_view_syntax(file_name, settings):
-            syntax = os.path.splitext(
-                os.path.basename(settings.get("syntax")))[0].lower()
-
-            if (syntax in cls.filetypes):
-                return syntax
-
-            elif file_name:
-                extension = os.path.splitext(file_name)[1].lstrip(".")
-                for syntax, values in cls.filetypes.items():
-                    if syntax == "default":
-                        continue
-                    if extension in values["extensions"]:
-                        return syntax
-            return None
-
         if view.view_id in cls.view_listeners:
             return cls.view_listeners[view.view_id]
 
         if view.settings().get("rb_enable", True):
-            syntax = check_view_syntax(view.file_name(), view.settings())
-
-            if syntax is None and force is True:
-                syntax = "default"
-
-            if syntax:
-                filetype = cls.filetypes.get(syntax)
-                if filetype["bracket_pairs"]:
-                    listener = RainbowBracketsViewListener(view, filetype)
+            syntax = cls.get_view_syntax(view) or "<default>"
+            config = cls.configs_by_stx[syntax]
+            if config["enabled"] or force:
+                if config["bracket_pairs"]:
+                    listener = RainbowBracketsViewListener(view, syntax, config)
                     cls.view_listeners[view.view_id] = listener
                     return listener
-                else:
+                elif force:
                     sublime.error_message("empty brackets list")
+        return None
+
+    @classmethod
+    def get_view_syntax(cls, view):
+        syntax = view.syntax().name
+        if syntax in cls.configs_by_stx:
+            return syntax
+        filename = view.file_name()
+        if filename:
+            ext = os.path.splitext(filename)[1]
+            return cls.syntaxes_by_ext.get(ext, None)
         return None
 
     @classmethod
@@ -478,7 +480,7 @@ class ColorSchemeManager(sublime_plugin.EventListener):
     @classmethod
     def init(cls):
         def load_settings_build_cs():
-            RainbowBracketsViewManager.load_filetypes(cls.settings)
+            RainbowBracketsViewManager.load_config(cls.settings)
             cls.build_color_scheme()
 
         cls.prefs = sublime.load_settings("Preferences.sublime-settings")
@@ -536,7 +538,7 @@ class ColorSchemeManager(sublime_plugin.EventListener):
         nearest_background = nearest_color(background)
 
         rules = []
-        for value in RainbowBracketsViewManager.filetypes.values():
+        for value in RainbowBracketsViewManager.configs_by_stx.values():
             rules.append({
                 "scope": value["bad_scope"],
                 "foreground": value["mismatch_color"],
@@ -550,7 +552,7 @@ class ColorSchemeManager(sublime_plugin.EventListener):
                 })
         color_scheme_data = {
             "name": os.path.splitext(os.path.basename(cls.color_scheme))[0],
-            "author": "RainbowBrackets",
+            "author": "https://github.com/absop/RainbowBrackets",
             "variables": {},
             "globals": {},
             "rules": rules
@@ -564,6 +566,7 @@ class ColorSchemeManager(sublime_plugin.EventListener):
         os.makedirs(color_scheme_path, exist_ok=True)
         with open(color_scheme_file, "w+") as file:
             file.write(json.dumps(color_scheme_data))
+            Debuger.print(f"write color scheme: {color_scheme_file}")
 
 
 def plugin_loaded():

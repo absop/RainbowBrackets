@@ -8,32 +8,32 @@
           }
     },
     {
-        "caption": "RainbowBrackets: toggle debug",
+        "caption": "RainbowBrackets: Toggle Debug",
         "command": "rainbow_brackets_controller",
         "args": { "action": "toggle debug" }
     },
     {
-        "caption": "RainbowBrackets: setup plugin",
+        "caption": "RainbowBrackets: Setup Plugin",
         "command": "rainbow_brackets_controller",
         "args": { "action": "setup plugin" }
     },
     {
-        "caption": "RainbowBrackets: close plugin",
+        "caption": "RainbowBrackets: Close Plugin",
         "command": "rainbow_brackets_controller",
         "args": { "action": "close plugin" }
     },
     {
-        "caption": "RainbowBrackets: make rainbow",
+        "caption": "RainbowBrackets: Make Rainbow",
         "command": "rainbow_brackets_controller",
         "args": { "action": "make rainbow" }
     },
     {
-        "caption": "RainbowBrackets: clear rainbow",
+        "caption": "RainbowBrackets: Clear Rainbow",
         "command": "rainbow_brackets_controller",
         "args": { "action": "clear rainbow" }
     },
     {
-        "caption": "RainbowBrackets: clear color schemes",
+        "caption": "RainbowBrackets: Clear Color Schemes",
         "command": "rainbow_brackets_controller",
         "args": { "action": "clear color schemes" }
     }
