@@ -1,0 +1,5 @@
+# Changelog
+
+1. More reasonable and user-friendly settings
+
+Please update your custom settings file, by running the command `pref:rb sts`(Preferences: RainbowBrackets Settings) from the Command Palette and modifying the content in the right view by referring to the content in the left view.
