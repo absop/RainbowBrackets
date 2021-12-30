@@ -32,33 +32,58 @@
     },
 
     "syntax_specific": {
-        "Scheme": {
-            "extensions": [".scm", ".ss"],
+        "Bash": {
+            "coloring": false,
 
-            "ignored_scopes": [
-                "comment", "string", "constant", "symbol"
-            ]
+            "ignored_scopes": "keyword"
         },
 
         "JSON": {
             "bracket_pairs": {
                 "{": "}",
-                "[": "]"
+                "[": "]",
             },
 
             "extensions": [
                 ".json",
-                ".sublime-build",
-                ".sublime-color-scheme",
-                ".sublime-commands",
-                ".sublime-keymap",
-                ".sublime-menu",
                 ".sublime-settings",
+                ".sublime-menu",
+                ".sublime-build",
+                ".sublime-keymap",
+                ".sublime-commands",
                 ".sublime-theme",
+                ".sublime-color-scheme"
             ],
 
             "ignored_scopes": [
                 "comment", "string"
+            ]
+        },
+
+        "Regular Expression": {
+            "extensions": [
+                ".sublime-syntax"
+            ],
+
+            "ignored_scopes": [
+                "meta.set.regexp",
+                "constant"
+            ]
+        },
+
+        "Scheme": {
+            "bracket_pairs": {
+                "(": ")",
+                "[": "]",
+            },
+
+            "extensions": [
+                ".scm",
+                ".ss"
+            ],
+
+            "ignored_scopes": [
+                "comment", "string", "constant"
             ]
         }
     }
