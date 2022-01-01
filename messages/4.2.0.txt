@@ -1,0 +1,3 @@
+# Changelog
+
+1. Fixed an issue where bracket colors did not update with switching color schemes.
