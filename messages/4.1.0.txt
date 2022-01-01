@@ -1,4 +1,7 @@
-# Changelog
+RainbowBrackets
+---------------
+
+## Changelog
 
 1. More reasonable and user-friendly settings
 
