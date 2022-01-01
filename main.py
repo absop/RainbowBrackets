@@ -575,9 +575,7 @@ def plugin_loaded():
         active_view = sublime.active_window().active_view()
         RainbowBracketsViewManager.check_view_load_listener(active_view)
 
-    load_plugin()
-    if not RainbowBracketsViewManager.is_ready:
-        sublime.set_timeout(load_plugin, 50)
+    sublime.set_timeout_async(load_plugin)
 
 
 def plugin_unloaded():
