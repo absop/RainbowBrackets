@@ -29,7 +29,7 @@ class Debuger():
                 return json.JSONEncoder.default(self, obj)
 
         if cls.debug:
-            print("%s:" % cls.employer, json.dumps(obj,
+            print(f"{cls.employer}:", json.dumps(obj,
                 cls=setEncoder, indent=4,
                 sort_keys=True, ensure_ascii=False))
 
@@ -351,10 +351,10 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
 
         for syntax, config in configs_by_stx.items():
             levels = range(len(config["rainbow_colors"]))
-            config["keys"]   = ["rb_l%d_%s" % (i, syntax) for i in levels]
-            config["scopes"] = ["%s.l%d.rb" % (syntax, i) for i in levels]
-            config["bad_key"]   = "rb_mismatch_%s" % syntax
-            config["bad_scope"] = "%s.mismatch.rb" % syntax
+            config["keys"]   = [f"rb_l{i}_{syntax}" for i in levels]
+            config["scopes"] = [f"{syntax}.l{i}.rb" for i in levels]
+            config["bad_key"]   = f"rb_mismatch_{syntax}"
+            config["bad_scope"] = f"{syntax}.mismatch.rb"
 
             pairs = config["bracket_pairs"]
             brackets = sorted(list(pairs.keys()) + list(pairs.values()))
