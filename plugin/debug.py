@@ -1,10 +1,12 @@
 import json
 import sublime
 
+from .consts import PACKAGE_NAME
+
 
 class Debuger():
     debug = False
-    employer = "RainbowBrackets"
+    employer = PACKAGE_NAME
 
     @classmethod
     def print(cls, *args, **kwargs):
