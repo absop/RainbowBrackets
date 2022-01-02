@@ -16,9 +16,9 @@ class Debuger():
     employer = "RainbowBrackets"
 
     @classmethod
-    def print(cls, *args):
+    def print(cls, *args, **kwargs):
         if cls.debug:
-            print("%s:" % cls.employer, *args, sep="\n\t")
+            print(f"{cls.employer}:", *args, **kwargs)
 
     @classmethod
     def pprint(cls, obj):
@@ -188,20 +188,24 @@ class RainbowBracketsViewListener():
         self.view = view
 
     def __del__(self):
-        Debuger.print("exiting from file:", self.view.file_name())
+        Debuger.print(f"exiting from file {self.view_file_name()}")
         self.clear_bracket_regions()
+
+    def view_file_name(self):
+        return os.path.basename(self.view.file_name() or 'untitled')
 
     def load(self):
         start = time.time()
         self.check_bracket_regions()
         end = time.time()
         Debuger.print(
-            f"loaded file: {(self.view.file_name() or 'untitled')}",
+            f"loaded file: {self.view_file_name()}",
             f"pattern: {self.pattern}",
             f"selector: {self.selector}",
             f"syntax: {self.syntax}",
             f"coloring: {self.coloring}",
-            f"cost time: {end - start:>.2f}")
+            f"cost time: {end - start:>.2f}",
+            sep="\n\t")
 
     # TODO: Update the bracket trees dynamically rather
     # than reconstruct them from beginning every time.
@@ -409,7 +413,7 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
 
     @classmethod
     def check_view_load_listener(cls, view):
-        listener = cls.check_view_add_listener(view)
+        listener = view.size() and cls.check_view_add_listener(view)
         if listener and not listener.bracket_regions_trees:
             listener.load()
 
@@ -566,7 +570,7 @@ class ColorSchemeManager(sublime_plugin.EventListener):
         os.makedirs(color_scheme_path, exist_ok=True)
         with open(color_scheme_file, "w+") as file:
             file.write(json.dumps(color_scheme_data))
-            Debuger.print(f"write color scheme: {color_scheme_file}")
+            Debuger.print(f"write color scheme {color_scheme_file}")
 
 
 def plugin_loaded():
