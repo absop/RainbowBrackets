@@ -8,7 +8,7 @@ from .consts        import DEFAULT_SYNTAX
 from .consts        import PACKAGE_NAME
 from .consts        import SETTINGS_FILE
 from .debug         import Debuger
-from .execute       import RainbowBracketsExecutor
+from .executor      import RainbowBracketsExecutor
 
 
 class RainbowBracketsViewManager(sublime_plugin.EventListener):

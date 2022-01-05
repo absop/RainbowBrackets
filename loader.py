@@ -1,6 +1,6 @@
 import sublime
 
-from .plugin.manage   import RainbowBracketsViewManager
+from .plugin.manager  import RainbowBracketsViewManager
 from .plugin.commands import (
     RainbowBracketsToggleDebugCommand,
     RainbowBracketsClearColorSchemesCommand,

@@ -2,10 +2,10 @@ import re
 import sublime
 import sublime_plugin
 
-from sublime import Region
-from .consts import SETTINGS_FILE
-from .debug  import Debuger
-from .manage import RainbowBracketsViewManager as manager
+from sublime  import Region
+from .consts  import SETTINGS_FILE
+from .debug   import Debuger
+from .manager import RainbowBracketsViewManager as _manager
 
 
 class RainbowBracketsToggleDebugCommand(sublime_plugin.ApplicationCommand):
@@ -17,12 +17,12 @@ class RainbowBracketsToggleDebugCommand(sublime_plugin.ApplicationCommand):
 
 class RainbowBracketsClearColorSchemesCommand(sublime_plugin.ApplicationCommand):
     def run(self):
-        manager.color_scheme_manager.clear_color_schemes()
+        _manager.color_scheme_manager.clear_color_schemes()
 
 
 class RainbowBracketsViewCommand(sublime_plugin.TextCommand):
     def get_executor(self):
-        return manager.get_view_executor(self.view)
+        return _manager.get_view_executor(self.view)
 
     def is_coloring(self):
         executor = self.get_executor()
@@ -31,7 +31,7 @@ class RainbowBracketsViewCommand(sublime_plugin.TextCommand):
 
 class RainbowBracketsColorCommand(RainbowBracketsViewCommand):
     def run(self, edit):
-        manager.color_view(self.view)
+        _manager.color_view(self.view)
 
     def is_enabled(self):
         return not self.is_coloring()
@@ -39,7 +39,7 @@ class RainbowBracketsColorCommand(RainbowBracketsViewCommand):
 
 class RainbowBracketsSweepCommand(RainbowBracketsViewCommand):
     def run(self, edit):
-        manager.sweep_view(self.view)
+        _manager.sweep_view(self.view)
 
     def is_enabled(self):
         return self.is_coloring()
@@ -47,7 +47,7 @@ class RainbowBracketsSweepCommand(RainbowBracketsViewCommand):
 
 class RainbowBracketsSetupCommand(RainbowBracketsViewCommand):
     def run(self, edit):
-        manager.setup_view_executor(self.view)
+        _manager.setup_view_executor(self.view)
 
     def is_enabled(self):
         return self.get_executor() is None
@@ -55,7 +55,7 @@ class RainbowBracketsSetupCommand(RainbowBracketsViewCommand):
 
 class RainbowBracketsCloseCommand(RainbowBracketsViewCommand):
     def run(self, edit):
-        manager.close_view_executor(self.view)
+        _manager.close_view_executor(self.view)
 
     def is_enabled(self):
         return self.get_executor() is not None
@@ -74,7 +74,7 @@ class RainbowBracketsEditBracketsCommand(sublime_plugin.TextCommand):
                     yield bracket
 
         view  = self.view
-        trees = manager.get_view_bracket_trees(view)
+        trees = _manager.get_view_bracket_trees(view)
         if not trees:
             return
 
@@ -99,7 +99,7 @@ class RainbowBracketsEditBracketsCommand(sublime_plugin.TextCommand):
                 view.sel().add_all(selections)
 
         elif operation == "transform":
-            mapping = manager.get_view_bracket_pairs(view)
+            mapping = _manager.get_view_bracket_pairs(view)
             replace_list = []
             for p in find_cursor_brackets():
                 if view.substr(p[0]) == to:
