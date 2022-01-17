@@ -151,7 +151,8 @@ class RainbowBracketsEditBracketsCommand(sublime_plugin.TextCommand):
                 elif oa > r_end:
                     hi = mi - 1
                 else:
-                    if oa < r_begin and r_end < cb:
+                    if (oa < r_begin and r_end < cb or
+                        r_begin == r_end and (r_end == oa or r_begin == cb)):
                         found_closer = True
                         trees = tr.contain
                         p = (tr.opening, tr.closing)
