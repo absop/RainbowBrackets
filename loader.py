@@ -2,13 +2,13 @@ import sublime
 
 from .plugin.manager  import RainbowBracketsViewManager
 from .plugin.commands import (
-    RainbowBracketsToggleDebugCommand,
-    RainbowBracketsClearColorSchemesCommand,
-    RainbowBracketsColorCommand,
-    RainbowBracketsSweepCommand,
-    RainbowBracketsSetupCommand,
-    RainbowBracketsCloseCommand,
-    RainbowBracketsEditBracketsCommand
+    RbToggleDebugCommand,
+    RbClearColorSchemesCommand,
+    RbColorCommand,
+    RbSweepCommand,
+    RbSetupCommand,
+    RbCloseCommand,
+    RbEditBracketsCommand
 )
 
 def plugin_loaded():

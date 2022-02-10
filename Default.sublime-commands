@@ -9,26 +9,26 @@
     },
     {
         "caption": "RainbowBrackets: Color",
-        "command": "rainbow_brackets_color",
+        "command": "rb_color",
     },
     {
         "caption": "RainbowBrackets: Sweep",
-        "command": "rainbow_brackets_sweep",
+        "command": "rb_sweep",
     },
     {
         "caption": "RainbowBrackets: Setup",
-        "command": "rainbow_brackets_setup",
+        "command": "rb_setup",
     },
     {
         "caption": "RainbowBrackets: Close",
-        "command": "rainbow_brackets_close",
+        "command": "rb_close",
     },
     {
         "caption": "RainbowBrackets: Clear Color Schemes",
-        "command": "rainbow_brackets_clear_color_schemes",
+        "command": "rb_clear_color_schemes",
     },
     {
         "caption": "RainbowBrackets: Toggle Debug",
-        "command": "rainbow_brackets_toggle_debug",
+        "command": "rb_toggle_debug",
     }
 ]

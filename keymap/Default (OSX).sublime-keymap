@@ -1,52 +1,52 @@
 [
     {
         "keys": ["ctrl+alt+9"],
-        "command": "rainbow_brackets_edit_brackets",
+        "command": "rb_edit_brackets",
         "args": { "operation": "transform", "to": "(" }
     },
     {
         "keys": ["ctrl+alt+0"],
-        "command": "rainbow_brackets_edit_brackets",
+        "command": "rb_edit_brackets",
         "args": { "operation": "transform", "to": "(" }
     },
     {
         "keys": ["ctrl+alt+["],
-        "command": "rainbow_brackets_edit_brackets",
+        "command": "rb_edit_brackets",
         "args": { "operation": "transform", "to": "[" }
     },
     {
         "keys": ["ctrl+alt+]"],
-        "command": "rainbow_brackets_edit_brackets",
+        "command": "rb_edit_brackets",
         "args": { "operation": "transform", "to": "[" }
     },
     {
         "keys": ["ctrl+alt+shift+["],
-        "command": "rainbow_brackets_edit_brackets",
+        "command": "rb_edit_brackets",
         "args": { "operation": "transform", "to": "{" }
     },
     {
         "keys": ["ctrl+alt+shift+]"],
-        "command": "rainbow_brackets_edit_brackets",
+        "command": "rb_edit_brackets",
         "args": { "operation": "transform", "to": "{" }
     },
     {
         "keys": ["ctrl+alt+r"],
-        "command": "rainbow_brackets_edit_brackets",
+        "command": "rb_edit_brackets",
         "args": { "operation": "remove", "select_content": false }
     },
     {
         "keys": ["ctrl+alt+."],
-        "command": "rainbow_brackets_edit_brackets",
+        "command": "rb_edit_brackets",
         "args": { "operation": "remove", "select_content": true }
     },
     {
         "keys": ["ctrl+alt+,"],
-        "command": "rainbow_brackets_edit_brackets",
+        "command": "rb_edit_brackets",
         "args": { "operation": "select" },
     },
     {
         "keys": ["ctrl+alt+shift+,"],
-        "command": "rainbow_brackets_edit_brackets",
+        "command": "rb_edit_brackets",
         "args": { "operation": "select", "to": "cond|define|lambda|let" },
     }
 ]

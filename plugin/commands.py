@@ -8,19 +8,19 @@ from .debug   import Debuger
 from .manager import RainbowBracketsViewManager as _manager
 
 
-class RainbowBracketsToggleDebugCommand(sublime_plugin.ApplicationCommand):
+class RbToggleDebugCommand(sublime_plugin.ApplicationCommand):
     def run(self):
         Debuger.debug = not Debuger.debug
         sublime.load_settings(SETTINGS_FILE).set("debug", Debuger.debug)
         sublime.save_settings(SETTINGS_FILE)
 
 
-class RainbowBracketsClearColorSchemesCommand(sublime_plugin.ApplicationCommand):
+class RbClearColorSchemesCommand(sublime_plugin.ApplicationCommand):
     def run(self):
         _manager.color_scheme_manager.clear_color_schemes()
 
 
-class RainbowBracketsViewCommand(sublime_plugin.TextCommand):
+class RbViewCommand(sublime_plugin.TextCommand):
     def get_executor(self):
         return _manager.get_view_executor(self.view)
 
@@ -29,7 +29,7 @@ class RainbowBracketsViewCommand(sublime_plugin.TextCommand):
         return bool(executor and executor.coloring)
 
 
-class RainbowBracketsColorCommand(RainbowBracketsViewCommand):
+class RbColorCommand(RbViewCommand):
     def run(self, edit):
         _manager.color_view(self.view)
 
@@ -37,7 +37,7 @@ class RainbowBracketsColorCommand(RainbowBracketsViewCommand):
         return not self.is_coloring()
 
 
-class RainbowBracketsSweepCommand(RainbowBracketsViewCommand):
+class RbSweepCommand(RbViewCommand):
     def run(self, edit):
         _manager.sweep_view(self.view)
 
@@ -45,7 +45,7 @@ class RainbowBracketsSweepCommand(RainbowBracketsViewCommand):
         return self.is_coloring()
 
 
-class RainbowBracketsSetupCommand(RainbowBracketsViewCommand):
+class RbSetupCommand(RbViewCommand):
     def run(self, edit):
         _manager.setup_view_executor(self.view)
 
@@ -53,7 +53,7 @@ class RainbowBracketsSetupCommand(RainbowBracketsViewCommand):
         return self.get_executor() is None
 
 
-class RainbowBracketsCloseCommand(RainbowBracketsViewCommand):
+class RbCloseCommand(RbViewCommand):
     def run(self, edit):
         _manager.close_view_executor(self.view)
 
@@ -61,7 +61,7 @@ class RainbowBracketsCloseCommand(RainbowBracketsViewCommand):
         return self.get_executor() is not None
 
 
-class RainbowBracketsEditBracketsCommand(sublime_plugin.TextCommand):
+class RbEditBracketsCommand(sublime_plugin.TextCommand):
     def run(self, edit, operation="", to="", select_content=True):
         def find_cursor_brackets(regex=None):
             last_bracket = None
