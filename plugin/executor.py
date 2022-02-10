@@ -7,7 +7,7 @@ from sublime import Region
 from .debug  import Debuger
 
 
-class Tree:
+class BracketTree:
     __slots__ = ["opening", "closing", "contain"]
 
     def __init__(self, opening, closing, contain):
@@ -85,23 +85,21 @@ class RainbowBracketsExecutor():
     def construct_bracket_trees(self):
         self.bracket_regions_trees = []
 
-        brackets       = self.brackets
-        selector       = self.selector
-        number_levels  = self.color_number
-        match_selector = self.view.match_selector
-        view_full_text = self.view.substr(Region(0, self.view.size()))
-        match_iterator = self.regexp.finditer(view_full_text)
+        opening_stack   = []
+        tree_node_stack = [BracketTree(None, None, self.bracket_regions_trees)]
 
-        opening_stack          = []
-        tree_node_stack        = [Tree(None, None, self.bracket_regions_trees)]
-        tree_node_stack_append = tree_node_stack.append
-        opening_stack_append = opening_stack.append
-        tree_node_stack_pop = tree_node_stack.pop
-        opening_stack_pop = opening_stack.pop
-
-        def handle(bracket, region):
+        def handle_bracket_region(bracket, region,
+            Node=BracketTree,
+            brackets=self.brackets,
+            opening_stack=opening_stack,
+            opening_stack_append=opening_stack.append,
+            opening_stack_pop=opening_stack.pop,
+            tree_node_stack=tree_node_stack,
+            tree_node_stack_append=tree_node_stack.append,
+            tree_node_stack_pop=tree_node_stack.pop
+            ):
             if bracket in brackets:
-                tree_node_stack_append(Tree(region, None, []))
+                tree_node_stack_append(Node(region, None, []))
                 opening_stack_append(bracket)
 
             elif opening_stack and bracket == brackets[opening_stack[-1]]:
@@ -110,33 +108,37 @@ class RainbowBracketsExecutor():
                 node.closing = region
                 tree_node_stack[-1].contain.append(node)
 
-        self.handle_matches(selector, match_selector, match_iterator, handle)
+        view_full_text = self.view.substr(Region(0, self.view.size()))
+        self.iterate_matches(
+            self.regexp.finditer(view_full_text),
+            self.view.match_selector,
+            self.selector,
+            handle_bracket_region
+        )
 
     def construct_bracket_trees_and_lists(self):
         self.bad_bracket_regions   = []
         self.bracket_regions_lists = []
         self.bracket_regions_trees = []
 
-        brackets       = self.brackets
-        selector       = self.selector
-        number_levels  = self.color_number
-        match_selector = self.view.match_selector
-        view_full_text = self.view.substr(Region(0, self.view.size()))
-        match_iterator = self.regexp.finditer(view_full_text)
+        opening_stack    = []
+        tree_node_stack  = [BracketTree(None, None, self.bracket_regions_trees)]
+        regions_by_layer = [list() for _ in range(self.color_number)]
 
-        opening_stack          = []
-        tree_node_stack        = [Tree(None, None, self.bracket_regions_trees)]
-        tree_node_stack_append = tree_node_stack.append
-        opening_stack_append = opening_stack.append
-        tree_node_stack_pop = tree_node_stack.pop
-        opening_stack_pop = opening_stack.pop
-
-        regions_by_level = [list() for i in range(number_levels)]
-        appends_by_level = [rs.append for rs in regions_by_level]
-
-        def handle(bracket, region):
+        def handle_bracket_region(bracket, region,
+            Node=BracketTree,
+            brackets=self.brackets,
+            num_layers=self.color_number,
+            opening_stack=opening_stack,
+            opening_stack_append=opening_stack.append,
+            opening_stack_pop=opening_stack.pop,
+            tree_node_stack=tree_node_stack,
+            tree_node_stack_append=tree_node_stack.append,
+            tree_node_stack_pop=tree_node_stack.pop,
+            appends=[rs.append for rs in regions_by_layer]
+            ):
             if bracket in brackets:
-                tree_node_stack_append(Tree(region, None, []))
+                tree_node_stack_append(Node(region, None, []))
                 opening_stack_append(bracket)
 
             elif opening_stack and bracket == brackets[opening_stack[-1]]:
@@ -144,21 +146,28 @@ class RainbowBracketsExecutor():
                 node = tree_node_stack_pop()
                 node.closing = region
                 tree_node_stack[-1].contain.append(node)
-                level = len(opening_stack) % number_levels
-                appends_by_level[level](node.opening)
-                appends_by_level[level](node.closing)
+                layer = len(opening_stack) % num_layers
+                appends[layer](node.opening)
+                appends[layer](node.closing)
             else:
                 self.bad_bracket_regions.append(region)
 
-        self.handle_matches(selector, match_selector, match_iterator, handle)
-        self.bracket_regions_lists = [ls for ls in regions_by_level if ls]
+        view_full_text = self.view.substr(Region(0, self.view.size()))
+        self.iterate_matches(
+            self.regexp.finditer(view_full_text),
+            self.view.match_selector,
+            self.selector,
+            handle_bracket_region
+        )
 
-    def handle_matches(self, selector, match_selector, match_iterator, handle):
-        if selector:
-            for m in match_iterator:
-                if match_selector(m.span()[0], selector):
+        self.bracket_regions_lists = [ls for ls in regions_by_layer if ls]
+
+    def iterate_matches(self, matches, ignore, ignored_scope_selector, handle):
+        if ignored_scope_selector:
+            for m in matches:
+                if ignore(m.span()[0], ignored_scope_selector):
                     continue
                 handle(m.group(), Region(*m.span()))
         else:
-            for m in match_iterator:
+            for m in matches:
                 handle(m.group(), Region(*m.span()))
