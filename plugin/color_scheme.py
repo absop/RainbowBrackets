@@ -1,5 +1,8 @@
-import os
+from functools import lru_cache
 import json
+from typing import Dict, List, Optional, Tuple
+from pathlib import PurePath, Path
+
 import sublime
 import weakref
 
@@ -7,101 +10,149 @@ from .debug  import Debuger
 from .consts import DEFAULT_CS
 from .consts import PACKAGE_NAME
 from .consts import PACKAGE_URL
-from .consts import PREFS_FILE
 
 
-def _nearest_color(color):
-    b = int(color[5:7], 16)
-    b += 1 - 2 * (b == 255)
-    return color[:-2] + "%02x" % b
+def _nearest_color(color : str):
+    """
+    Assume the input color is well-formed
+    """
+    c = int(color[1:], 16)
+    r, g, b = (c >> 16) & 0xff, (c >> 8) & 0xff, c & 0xff
+    r = r + (1 if r < 255 else -1)
+    return f'#{r:02x}{g:02x}{b:02x}'
 
-def _color_scheme_background(color_scheme):
-    view = sublime.active_window().active_view()
-    # origin_color_scheme = view.settings().get("color_scheme")
-    view.settings().set("color_scheme", color_scheme)
-    background = view.style().get("background")
-    # view.settings().set("color_scheme", origin_color_scheme)
-    return background
+
+# scope color pairs
+PlainRules = List[Tuple[str, str]]
 
 
 class ColorSchemeManager:
+    plain_rules : Dict[str, PlainRules] = {}
+
+    view_current_cs : Dict[sublime.View, Optional[str]] = {}
+
     def __new__(cls, *args, **kwargs):
-        if hasattr(cls, 'objref') and cls.objref() is not None:
-            return cls.objref()
+        if hasattr(cls, 'objref'):
+            if obj := cls.objref():
+                return obj
         self = object.__new__(cls)
-        self.init()
         cls.objref = weakref.ref(self)
         return self
 
-    def init(self):
-        self.prefs = sublime.load_settings(PREFS_FILE)
-        self.prefs.add_on_change(PACKAGE_NAME, self.rewrite_color_scheme)
-        self.color_scheme = self.prefs.get("color_scheme", DEFAULT_CS)
+    def set_colors(self, scope_color_pairs : PlainRules):
+        index = str(scope_color_pairs)
+        self.last_written_cs = None
+        self.plain_rules[index] = scope_color_pairs
+        self.current_rules_index = index
 
-    def exit(self):
-        self.prefs.clear_on_change(PACKAGE_NAME)
+        for view in self.view_current_cs:
+            self.rewrite_view_cs(view)
 
-    def __init__(self, get_configs):
-        self.get_configs = get_configs
-        self.write_color_scheme()
+    def attach_view(self, view : sublime.View):
+        settings = view.settings()
+        self.view_current_cs[view] = None
+        def on_change():
+            view_new_cs = settings.get('color_scheme', DEFAULT_CS)
+            if view_new_cs != self.view_current_cs[view]:
+                self.view_current_cs[view] = view_new_cs
+                if view_new_cs != self.last_written_cs:
+                    self.rewrite_view_cs(view)
+        settings.add_on_change('rb.color_scheme_mgr', on_change)
 
-    def color_scheme_cache_path(self):
-        return os.path.join(sublime.packages_path(),
-            "User", "Color Schemes", "RainbowBrackets")
+    def detach_view(self, view : sublime.View):
+        view.settings().clear_on_change('rb.color_scheme_mgr')
+        self.view_current_cs.pop(view, None)
 
-    def color_scheme_name(self):
-        return os.path.basename(
-            self.color_scheme).replace("tmTheme", "sublime-color-scheme")
+    def rewrite_view_cs(self, view : sublime.View):
+        cs = self.view_current_cs[view]
+        if cs is None:
+            return
 
-    def clear_color_schemes(self, all=False):
-        color_scheme_path = self.color_scheme_cache_path()
-        color_scheme_name = self.color_scheme_name()
-        for file in os.listdir(color_scheme_path):
-            if file != color_scheme_name or all:
+        def update_cs():
+            # The color scheme to preview has been updated since
+            # the timeout was created
+            if cs != self.view_current_cs[view]:
+                return
+            if cs == self.last_written_cs:
+                return
+            self.write_view_cs(view, cs)
+            self.last_written_cs = cs
+
+        sublime.set_timeout(update_cs, 250)
+
+    def write_view_cs(self, view : sublime.View, color_scheme : str) -> None:
+        """
+        We assume that there are no two CS with the same name
+        and different extensions. Even if they do, they are not
+        used at the same time.
+        """
+        bg = view.style().get('background')
+        cs = PurePath(color_scheme)
+        cs_text = self.generate_cs_text(cs.stem, bg, self.current_rules_index)
+        cache_path = self.cache_path()
+        cache_path.mkdir(parents=True, exist_ok=True)
+        cache_path.joinpath(
+            cs.with_suffix('.sublime-color-scheme')
+            ).write_text(cs_text)
+        Debuger.print(f'write color scheme {cs.stem}')
+
+    def cache_path(self):
+        try:
+            return self._cache_path
+        except:
+            self._cache_path = Path(
+                sublime.packages_path(), 'User', 'Color Schemes', PACKAGE_NAME)
+            return self._cache_path
+
+    @lru_cache
+    def generate_cs_text(self, name : str, bg : str, rules_index : str) -> str:
+        """
+        Generate the color scheme text from the given name,
+        background color and rules index, use lru_cache to
+        cache the results.
+        """
+        plain_rules = self.plain_rules[rules_index]
+        nearest_bg = _nearest_color(bg)
+        rules = []
+        for scope, foreground in plain_rules:
+            if scope.startswith('l'):
+                background = nearest_bg
+            else:
+                background = bg
+            rules.append({
+                "scope": scope,
+                "foreground": foreground,
+                "background": background
+            })
+
+        return json.dumps(
+            {
+                "name": name,
+                "author": PACKAGE_URL,
+                "variables": {},
+                "globals": {},
+                "rules": rules
+            }
+        )
+
+    def get_all_inuse_color_schemes(self):
+        color_scheme_set = set()
+        for window in sublime.windows():
+            for view in window.views(include_transient=True):
+                color_scheme = view.settings().get('color_scheme')
+                color_scheme_set.add(PurePath(color_scheme).stem)
+        return color_scheme_set
+
+    def clear_color_schemes(self):
+        cache_path = self.cache_path()
+        inuse_color_schemes = self.get_all_inuse_color_schemes()
+        for file in cache_path.iterdir():
+            if file.stem not in inuse_color_schemes:
                 try:
-                    os.remove(os.path.join(color_scheme_path, file))
+                    file.unlink()
+                    Debuger.print('removed', file.name)
                 except:
                     pass
 
-    def rewrite_color_scheme(self):
-        scheme = self.prefs.get("color_scheme", DEFAULT_CS)
-        if scheme != self.color_scheme:
-            self.color_scheme = scheme
-            self.write_color_scheme()
 
-    def write_color_scheme(self):
-        color_scheme_path = self.color_scheme_cache_path()
-        color_scheme_name = self.color_scheme_name()
-        color_scheme_file = os.path.join(color_scheme_path, color_scheme_name)
-        color_scheme_data = {
-            "name": os.path.splitext(color_scheme_name)[0],
-            "author": PACKAGE_URL,
-            "variables": {},
-            "globals": {},
-            "rules": self.get_rules()
-        }
-
-        # We only need to write a same named color_scheme,
-        # then sublime will load and apply it automatically.
-        os.makedirs(color_scheme_path, exist_ok=True)
-        with open(color_scheme_file, "w+") as file:
-            file.write(json.dumps(color_scheme_data))
-            Debuger.print(f"write color scheme {color_scheme_name}")
-
-    def get_rules(self):
-        rules = []
-        background = _color_scheme_background(self.color_scheme)
-        nearest_background = _nearest_color(background)
-        for config in self.get_configs():
-            rules.append({
-                "scope": config["bad_scope"],
-                "foreground": config["mismatch_color"],
-                "background": background
-            })
-            for scope, color in zip(config["scopes"], config["rainbow_colors"]):
-                rules.append({
-                    "scope": scope,
-                    "foreground": color,
-                    "background": nearest_background
-                })
-        return rules
+cs_mgr = ColorSchemeManager()

@@ -6,6 +6,7 @@ from sublime  import Region
 from .consts  import SETTINGS_FILE
 from .debug   import Debuger
 from .manager import RainbowBracketsViewManager as _manager
+from .color_scheme import cs_mgr
 
 
 class RbToggleDebugCommand(sublime_plugin.ApplicationCommand):
@@ -17,7 +18,7 @@ class RbToggleDebugCommand(sublime_plugin.ApplicationCommand):
 
 class RbClearColorSchemesCommand(sublime_plugin.ApplicationCommand):
     def run(self):
-        _manager.color_scheme_manager.clear_color_schemes()
+        cs_mgr.clear_color_schemes()
 
 
 class RbViewCommand(sublime_plugin.TextCommand):

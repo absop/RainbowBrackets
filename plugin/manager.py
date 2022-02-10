@@ -3,7 +3,7 @@ import os
 import sublime
 import sublime_plugin
 
-from .color_scheme  import ColorSchemeManager
+from .color_scheme  import cs_mgr
 from .consts        import DEFAULT_SYNTAX
 from .consts        import PACKAGE_NAME
 from .consts        import SETTINGS_FILE
@@ -28,8 +28,6 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
     @classmethod
     def exit(cls):
         cls.settings.clear_on_change(PACKAGE_NAME)
-        cls.color_scheme_manager.exit()
-        cls.color_scheme_manager = None
 
     @classmethod
     def reload(cls):
@@ -63,10 +61,10 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
 
         for syntax, config in configs_by_stx.items():
             levels = range(len(config["rainbow_colors"]))
-            config["keys"]   = [f"rb_l{i}_{syntax}" for i in levels]
-            config["scopes"] = [f"{syntax}.l{i}.rb" for i in levels]
-            config["bad_key"]   = f"rb_mismatch_{syntax}"
-            config["bad_scope"] = f"{syntax}.mismatch.rb"
+            config["keys"]   = [f"rb_{syntax}_l{i}" for i in levels]
+            config["scopes"] = [f"l{i}.{syntax}.rb" for i in levels]
+            config["bad_key"]   = f"rb_{syntax}_mismatch"
+            config["bad_scope"] = f"mismatch.{syntax}.rb"
 
             pairs = config["bracket_pairs"]
             brackets = sorted(list(pairs.keys()) + list(pairs.values()))
@@ -77,7 +75,12 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
         Debuger.debug = cls.settings.get("debug", False)
         Debuger.pprint(configs_by_stx)
 
-        cls.color_scheme_manager = ColorSchemeManager(configs_by_stx.values)
+        scope_color_pairs = {}
+        for config in configs_by_stx.values():
+            for scope, color in zip(config["scopes"], config["rainbow_colors"]):
+                scope_color_pairs[scope] = color
+            scope_color_pairs[config['bad_scope']] = config['mismatch_color']
+        cs_mgr.set_colors(list(scope_color_pairs.items()))
         cls.syntaxes_by_ext = syntaxes_by_ext
         cls.configs_by_stx = configs_by_stx
         cls.is_ready = True
@@ -113,6 +116,7 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
             if config["enabled"] or force:
                 if config["bracket_pairs"]:
                     executor = RainbowBracketsExecutor(view, syntax, config)
+                    cs_mgr.attach_view(view)
                     cls.view_executors[view.view_id] = executor
                     return executor
                 elif force:
@@ -210,3 +214,4 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
 
     def on_close(self, view):
         self.view_executors.pop(view.view_id, None)
+        cs_mgr.detach_view(view)
