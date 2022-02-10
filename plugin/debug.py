@@ -1,5 +1,4 @@
 import json
-import sublime
 
 from .consts import PACKAGE_NAME
 
