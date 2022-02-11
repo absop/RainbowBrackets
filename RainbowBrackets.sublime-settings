@@ -66,8 +66,11 @@
             ],
 
             "ignored_scopes": [
-                "meta.set.regexp",
-                "constant"
+                "string",
+                "comment",
+                "constant",
+                "meta.literal",
+                "meta.set",
             ]
         },
 
