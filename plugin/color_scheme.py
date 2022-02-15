@@ -92,7 +92,7 @@ class ColorSchemeManager:
         cache_path = self.cache_path()
         cache_path.mkdir(parents=True, exist_ok=True)
         cache_path.joinpath(
-            cs.with_suffix('.sublime-color-scheme')
+            cs.with_suffix('.sublime-color-scheme').name
             ).write_text(cs_text)
         Debuger.print(f'write color scheme {cs.stem}')
 
