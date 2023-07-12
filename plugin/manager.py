@@ -208,7 +208,7 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
     def on_activated(self, view):
         self.check_view_load_executor(view)
 
-    def on_modified(self, view):
+    def on_modified_async(self, view):
         executor = self.view_executors.get(view.view_id, None)
         executor and executor.check_bracket_regions()
 
