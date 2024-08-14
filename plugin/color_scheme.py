@@ -1,15 +1,28 @@
-from functools import lru_cache
 import json
+import weakref
+
+from functools import lru_cache
 from typing import Dict, List, Optional, Tuple
 from pathlib import PurePath, Path
 
 import sublime
-import weakref
 
 from .debug  import Debuger
 from .consts import DEFAULT_CS
 from .consts import PACKAGE_NAME
 from .consts import PACKAGE_URL
+
+
+builtin_color_names = [
+    'redish',
+    'orangish',
+    'yellowish',
+    'greenish',
+    'cyanish',
+    'bluish',
+    'purplish',
+    'pinkish'
+]
 
 
 def _nearest_color(color : str):
@@ -49,7 +62,6 @@ class ColorSchemeManager:
             self.rewrite_view_cs(view)
 
     def attach_view(self, view : sublime.View):
-        settings = view.settings()
         self.view_current_cs[view] = None
         def on_change():
             view_new_cs = settings.get('color_scheme', DEFAULT_CS)
@@ -57,6 +69,7 @@ class ColorSchemeManager:
                 self.view_current_cs[view] = view_new_cs
                 if view_new_cs != self.last_written_cs:
                     self.rewrite_view_cs(view)
+        settings = view.settings()
         settings.add_on_change('rb.color_scheme_mgr', on_change)
 
     def detach_view(self, view : sublime.View):
@@ -86,15 +99,19 @@ class ColorSchemeManager:
         and different extensions. Even if they do, they are not
         used at the same time.
         """
-        bg = view.style().get('background')
-        cs = PurePath(color_scheme)
-        cs_text = self.generate_cs_text(cs.stem, bg, self.current_rules_index)
+        style = view.style()
+        cs_text = self.generate_cs_text(
+            tuple(style[k] for k in builtin_color_names),
+            style['background'],
+            self.current_rules_index
+        )
+        cs_path = PurePath(color_scheme)
         cache_path = self.cache_path()
         cache_path.mkdir(parents=True, exist_ok=True)
         cache_path.joinpath(
-            cs.with_suffix('.sublime-color-scheme').name
+            cs_path.with_suffix('.sublime-color-scheme').name
             ).write_text(cs_text)
-        Debuger.print(f'write color scheme {cs.stem}')
+        Debuger.print(f'write color scheme {cs_path.stem}')
 
     def cache_path(self):
         try:
@@ -105,20 +122,27 @@ class ColorSchemeManager:
             return self._cache_path
 
     @lru_cache
-    def generate_cs_text(self, name : str, bg : str, rules_index : str) -> str:
+    def generate_cs_text(self,
+        colors : Tuple[str], bg : str, rules_index : str) -> str:
         """
-        Generate the color scheme text from the given name,
+        Generate the color scheme text from the given colors,
         background color and rules index, use lru_cache to
         cache the results.
         """
-        plain_rules = self.plain_rules[rules_index]
-        nearest_bg = _nearest_color(bg)
         rules = []
-        for scope, foreground in plain_rules:
-            if scope.startswith('l'):
-                background = nearest_bg
-            else:
+        variables = {}
+        nearest_bg = _nearest_color(bg)
+        color_map = dict(zip(builtin_color_names, colors))
+        for scope, color in self.plain_rules[rules_index]:
+            if scope.endswith('bad.rb'):
                 background = bg
+            else:
+                background = nearest_bg
+            if color in color_map:
+                variables[f'region-{color}'] = color_map[color]
+                foreground = f'var(region-{color})'
+            else:
+                foreground = color
             rules.append({
                 "scope": scope,
                 "foreground": foreground,
@@ -127,10 +151,8 @@ class ColorSchemeManager:
 
         return json.dumps(
             {
-                "name": name,
                 "author": PACKAGE_URL,
-                "variables": {},
-                "globals": {},
+                "variables": variables,
                 "rules": rules
             }
         )
