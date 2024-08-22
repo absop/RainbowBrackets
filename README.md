@@ -52,7 +52,9 @@ Settings template
             "constant"
         ],
 
-        "rainbow_colors": [
+        "color.error": "#FF0000",
+
+        "color.cycle": [
             "#FF0000", // level0
             "#FF6A00", // level1
             "#FFD800", // level2
@@ -62,7 +64,6 @@ Settings template
             "#7D00E5"  // level6
         ],
 
-        "mismatch_color": "#FF0000"
     },
 
     "syntax_specific": {

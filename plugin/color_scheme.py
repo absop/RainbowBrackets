@@ -134,7 +134,7 @@ class ColorSchemeManager:
         nearest_bg = _nearest_color(bg)
         color_map = dict(zip(builtin_color_names, colors))
         for scope, color in self.plain_rules[rules_index]:
-            if scope.endswith('bad.rb'):
+            if scope.startswith('error.'):
                 background = bg
             else:
                 background = nearest_bg

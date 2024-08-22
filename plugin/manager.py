@@ -60,11 +60,11 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
         configs_by_stx[DEFAULT_SYNTAX] = default_config
 
         for syntax, config in configs_by_stx.items():
-            levels = range(len(config["rainbow_colors"]))
+            levels = range(len(config["color.cycle"]))
             config["keys"]   = [f"rb_{syntax}_l{i}" for i in levels]
             config["scopes"] = [f"l{i}.{syntax}.rb" for i in levels]
-            config["bad_key"]   = f"rb_{syntax}_mismatch"
-            config["bad_scope"] = f"mismatch.{syntax}.rb"
+            config["err_key"]   = f"rb_{syntax}_error"
+            config["err_scope"] = f"error.{syntax}.rb"
 
             pairs = config["bracket_pairs"]
             brackets = sorted(list(pairs.keys()) + list(pairs.values()))
@@ -77,9 +77,9 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
 
         scope_color_pairs = {}
         for config in configs_by_stx.values():
-            for scope, color in zip(config["scopes"], config["rainbow_colors"]):
+            for scope, color in zip(config["scopes"], config["color.cycle"]):
                 scope_color_pairs[scope] = color
-            scope_color_pairs[config['bad_scope']] = config['mismatch_color']
+            scope_color_pairs[config['err_scope']] = config['color.error']
         cs_mgr.set_colors(list(scope_color_pairs.items()))
         cls.syntaxes_by_ext = syntaxes_by_ext
         cls.configs_by_stx = configs_by_stx

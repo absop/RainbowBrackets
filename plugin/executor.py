@@ -18,8 +18,8 @@ class BracketTree:
 
 class RainbowBracketsExecutor():
     def __init__(self, view, syntax, config):
-        self.bad_key   = config["bad_key"]
-        self.bad_scope = config["bad_scope"]
+        self.err_key   = config["err_key"]
+        self.err_scope = config["err_scope"]
         self.coloring  = config["coloring"]
         self.keys      = config["keys"]
         self.brackets  = config["bracket_pairs"]
@@ -27,7 +27,7 @@ class RainbowBracketsExecutor():
         self.scopes    = config["scopes"]
         self.selector  = config["selector"]
         self.color_number = len(self.keys)
-        self.bad_bracket_regions   = []
+        self.err_bracket_regions   = []
         self.bracket_regions_lists = []
         self.bracket_regions_trees = []
         self.regexp = re.compile(self.pattern)
@@ -68,17 +68,17 @@ class RainbowBracketsExecutor():
                         regions,
                         scope=self.scopes[level],
                         flags=sublime.DRAW_NO_OUTLINE|sublime.PERSISTENT)
-            if self.bad_bracket_regions:
+            if self.err_bracket_regions:
                 self.view.add_regions(
-                    self.bad_key,
-                    self.bad_bracket_regions,
-                    scope=self.bad_scope,
+                    self.err_key,
+                    self.err_bracket_regions,
+                    scope=self.err_scope,
                     flags=sublime.DRAW_EMPTY|sublime.PERSISTENT)
         else:
             self.construct_bracket_trees()
 
     def clear_bracket_regions(self):
-        self.view.erase_regions(self.bad_key)
+        self.view.erase_regions(self.err_key)
         for key in self.keys:
             self.view.erase_regions(key)
 
@@ -117,7 +117,7 @@ class RainbowBracketsExecutor():
         )
 
     def construct_bracket_trees_and_lists(self):
-        self.bad_bracket_regions   = []
+        self.err_bracket_regions   = []
         self.bracket_regions_lists = []
         self.bracket_regions_trees = []
 
@@ -150,7 +150,7 @@ class RainbowBracketsExecutor():
                 appends[layer](node.opening)
                 appends[layer](node.closing)
             else:
-                self.bad_bracket_regions.append(region)
+                self.err_bracket_regions.append(region)
 
         view_full_text = self.view.substr(Region(0, self.view.size()))
         self.iterate_matches(
