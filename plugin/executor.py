@@ -3,12 +3,11 @@ import os
 import time
 import sublime
 
-from sublime import Region
 from .debug  import Debuger
 
 
 class BracketTree:
-    __slots__ = ["opening", "closing", "contain"]
+    __slots__ = ['opening', 'closing', 'contain']
 
     def __init__(self, opening, closing, contain):
         self.opening = opening
@@ -18,14 +17,14 @@ class BracketTree:
 
 class RainbowBracketsExecutor():
     def __init__(self, view, syntax, config):
-        self.err_key   = config["err_key"]
-        self.err_scope = config["err_scope"]
-        self.coloring  = config["coloring"]
-        self.keys      = config["keys"]
-        self.brackets  = config["bracket_pairs"]
-        self.pattern   = config["pattern"]
-        self.scopes    = config["scopes"]
-        self.selector  = config["selector"]
+        self.err_key   = config['err_key']
+        self.err_scope = config['err_scope']
+        self.coloring  = config['coloring']
+        self.keys      = config['keys']
+        self.scopes    = config['scopes']
+        self.selector  = config['selector']
+        self.brackets  = config['bracket_pairs']
+        self.pattern   = config['pattern']
         self.color_number = len(self.keys)
         self.err_bracket_regions   = []
         self.bracket_regions_lists = []
@@ -36,7 +35,7 @@ class RainbowBracketsExecutor():
         self.view = view
 
     def __del__(self):
-        Debuger.print(f"exiting from file {self.view_file_name()}")
+        Debuger.print(f'exiting from file {self.view_file_name()}')
         self.clear_bracket_regions()
 
     def view_file_name(self):
@@ -47,13 +46,14 @@ class RainbowBracketsExecutor():
         self.check_bracket_regions()
         end = time.time()
         Debuger.print(
-            f"loaded file: {self.view_file_name()}",
-            f"pattern: {self.pattern}",
-            f"selector: {self.selector}",
-            f"syntax: {self.syntax}",
-            f"coloring: {self.coloring}",
-            f"cost time: {end - start:>.2f}",
-            sep="\n\t")
+            f'loaded file: {self.view_file_name()}',
+            f'pattern: {self.pattern}',
+            f'selector: {self.selector}',
+            f'syntax: {self.syntax}',
+            f'coloring: {self.coloring}',
+            f'cost time: {end - start:>.2f}',
+            sep='\n\t'
+        )
 
     # TODO: Update the bracket trees dynamically rather
     # than reconstruct them from beginning every time.
@@ -67,13 +67,15 @@ class RainbowBracketsExecutor():
                         self.keys[level],
                         regions,
                         scope=self.scopes[level],
-                        flags=sublime.DRAW_NO_OUTLINE|sublime.PERSISTENT)
+                        flags=sublime.DRAW_NO_OUTLINE|sublime.PERSISTENT
+                    )
             if self.err_bracket_regions:
                 self.view.add_regions(
                     self.err_key,
                     self.err_bracket_regions,
                     scope=self.err_scope,
-                    flags=sublime.DRAW_EMPTY|sublime.PERSISTENT)
+                    flags=sublime.DRAW_EMPTY|sublime.PERSISTENT
+                )
         else:
             self.construct_bracket_trees()
 
@@ -88,7 +90,8 @@ class RainbowBracketsExecutor():
         opening_stack   = []
         tree_node_stack = [BracketTree(None, None, self.bracket_regions_trees)]
 
-        def handle_bracket_region(bracket, region,
+        def handle_bracket_region(
+            bracket, region,
             Node=BracketTree,
             brackets=self.brackets,
             opening_stack=opening_stack,
@@ -97,7 +100,7 @@ class RainbowBracketsExecutor():
             tree_node_stack=tree_node_stack,
             tree_node_stack_append=tree_node_stack.append,
             tree_node_stack_pop=tree_node_stack.pop
-            ):
+        ):
             if bracket in brackets:
                 tree_node_stack_append(Node(region, None, []))
                 opening_stack_append(bracket)
@@ -108,7 +111,7 @@ class RainbowBracketsExecutor():
                 node.closing = region
                 tree_node_stack[-1].contain.append(node)
 
-        view_full_text = self.view.substr(Region(0, self.view.size()))
+        view_full_text = self.view.substr(sublime.Region(0, self.view.size()))
         self.iterate_matches(
             self.regexp.finditer(view_full_text),
             self.view.match_selector,
@@ -125,7 +128,8 @@ class RainbowBracketsExecutor():
         tree_node_stack  = [BracketTree(None, None, self.bracket_regions_trees)]
         regions_by_layer = [list() for _ in range(self.color_number)]
 
-        def handle_bracket_region(bracket, region,
+        def handle_bracket_region(
+            bracket, region,
             Node=BracketTree,
             brackets=self.brackets,
             num_layers=self.color_number,
@@ -136,7 +140,7 @@ class RainbowBracketsExecutor():
             tree_node_stack_append=tree_node_stack.append,
             tree_node_stack_pop=tree_node_stack.pop,
             appends=[rs.append for rs in regions_by_layer]
-            ):
+        ):
             if bracket in brackets:
                 tree_node_stack_append(Node(region, None, []))
                 opening_stack_append(bracket)
@@ -152,7 +156,7 @@ class RainbowBracketsExecutor():
             else:
                 self.err_bracket_regions.append(region)
 
-        view_full_text = self.view.substr(Region(0, self.view.size()))
+        view_full_text = self.view.substr(sublime.Region(0, self.view.size()))
         self.iterate_matches(
             self.regexp.finditer(view_full_text),
             self.view.match_selector,
@@ -162,7 +166,10 @@ class RainbowBracketsExecutor():
 
         self.bracket_regions_lists = [ls for ls in regions_by_layer if ls]
 
-    def iterate_matches(self, matches, ignore, ignored_scope_selector, handle):
+    def iterate_matches(
+        self, matches, ignore, ignored_scope_selector, handle,
+        Region=sublime.Region
+    ):
         if ignored_scope_selector:
             for m in matches:
                 if ignore(m.span()[0], ignored_scope_selector):
