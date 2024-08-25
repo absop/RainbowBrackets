@@ -38,46 +38,46 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
     def load_config(cls):
         cls.is_ready = False
 
-        default_config  = cls.settings.get("default_config", {})
-        configs_by_stx  = cls.settings.get("syntax_specific", {})
+        default_config  = cls.settings.get('default_config', {})
+        configs_by_stx  = cls.settings.get('syntax_specific', {})
         syntaxes_by_ext = {}
 
         for syntax, config in configs_by_stx.items():
-            for key in ("enabled", "coloring"):
+            for key in ('enabled', 'coloring'):
                 if key not in config:
                     config[key] = True
             for key in default_config.keys():
                 if key not in config:
                     config[key] = default_config[key]
-            for ext in config.get("extensions", []):
+            for ext in config.get('extensions', []):
                 syntaxes_by_ext[ext] = syntax
 
-        if "coloring" not in default_config:
-            default_config["coloring"] = False
-        if "enabled" not in default_config:
-            default_config["enabled"] = True
+        if 'coloring' not in default_config:
+            default_config['coloring'] = False
+        if 'enabled' not in default_config:
+            default_config['enabled'] = True
 
         configs_by_stx[DEFAULT_SYNTAX] = default_config
 
         for syntax, config in configs_by_stx.items():
-            levels = range(len(config["color.cycle"]))
-            config["keys"]   = [f"rb_{syntax}_l{i}" for i in levels]
-            config["scopes"] = [f"l{i}.{syntax}.rb" for i in levels]
-            config["err_key"]   = f"rb_{syntax}_error"
-            config["err_scope"] = f"error.{syntax}.rb"
+            levels = range(len(config['color.cycle']))
+            config['keys']   = [f'rb_{syntax}_l{i}' for i in levels]
+            config['scopes'] = [f'l{i}.{syntax}.rb' for i in levels]
+            config['err_key']   = f'rb_{syntax}_error'
+            config['err_scope'] = f'error.{syntax}.rb'
 
-            pairs = config["bracket_pairs"]
+            pairs = config['bracket_pairs']
             brackets = sorted(list(pairs.keys()) + list(pairs.values()))
 
-            config["pattern"]  = "|".join(re.escape(b) for b in brackets)
-            config["selector"] = "|".join(config.pop("ignored_scopes"))
+            config['pattern']  = '|'.join(re.escape(b) for b in brackets)
+            config['selector'] = '|'.join(config.pop('ignored_scopes'))
 
-        Debuger.debug = cls.settings.get("debug", False)
+        Debuger.debug = cls.settings.get('debug', False)
         Debuger.pprint(configs_by_stx)
 
         scope_color_pairs = {}
         for config in configs_by_stx.values():
-            for scope, color in zip(config["scopes"], config["color.cycle"]):
+            for scope, color in zip(config['scopes'], config['color.cycle']):
                 scope_color_pairs[scope] = color
             scope_color_pairs[config['err_scope']] = config['color.error']
         cs_mgr.set_colors(list(scope_color_pairs.items()))
@@ -95,7 +95,7 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
                 config == executor.config):
                 continue
             else:
-                Debuger.print(f"reload file {executor.view_file_name()}")
+                Debuger.print(f'reload file {executor.view_file_name()}')
                 executor.clear_bracket_regions()
                 executor.__init__(view, syntax, config)
                 executor.load()
@@ -104,23 +104,23 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
     def check_view_add_executor(cls, view, force=False):
         if not cls.is_ready:
             if force:
-                msg = "RainbowBrackets: error in loading settings."
+                msg = 'RainbowBrackets: error in loading settings.'
                 sublime.error_message(msg)
             return
 
         if view.view_id in cls.view_executors:
             return cls.view_executors[view.view_id]
 
-        if view.settings().get("rb_enable", True):
+        if view.settings().get('rb_enable', True):
             syntax, config = cls.get_syntax_config(view)
-            if config["enabled"] or force:
-                if config["bracket_pairs"]:
+            if config['enabled'] or force:
+                if config['bracket_pairs']:
                     executor = RainbowBracketsExecutor(view, syntax, config)
                     cs_mgr.attach_view(view)
                     cls.view_executors[view.view_id] = executor
                     return executor
                 elif force:
-                    sublime.error_message("empty brackets list")
+                    sublime.error_message('empty brackets list')
         return None
 
     @classmethod
@@ -142,7 +142,7 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
 
     @classmethod
     def force_add_executor(cls, view):
-        view.settings().set("rb_enable", True)
+        view.settings().set('rb_enable', True)
         return cls.check_view_add_executor(view, force=True)
 
     @classmethod
@@ -162,7 +162,7 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
 
     @classmethod
     def close_view_executor(cls, view):
-        view.settings().set("rb_enable", False)
+        view.settings().set('rb_enable', False)
         executor = cls.view_executors.pop(view.view_id, None)
         if executor and executor.coloring:
             executor.clear_bracket_regions()
