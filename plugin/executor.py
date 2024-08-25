@@ -35,8 +35,8 @@ class RainbowBracketsExecutor():
         self.view = view
 
     def __del__(self):
-        Debuger.print(f'exiting from file {self.view_file_name()}')
         self.clear_bracket_regions()
+        Debuger.print(f'Exited from {self.view_file_name()}')
 
     def view_file_name(self):
         return os.path.basename(self.view.file_name() or 'untitled')
@@ -45,15 +45,17 @@ class RainbowBracketsExecutor():
         start = time.time()
         self.check_bracket_regions()
         end = time.time()
-        Debuger.print(
-            f'loaded file: {self.view_file_name()}',
-            f'pattern: {self.pattern}',
-            f'selector: {self.selector}',
-            f'syntax: {self.syntax}',
-            f'coloring: {self.coloring}',
-            f'cost time: {end - start:>.2f}',
-            sep='\n\t'
-        )
+        if Debuger.debug:
+            Debuger.print(
+                '\n\t'.join([
+                    f'Loaded on {self.view_file_name()}',
+                    f'pattern: {self.pattern}',
+                    f'selector: {self.selector}',
+                    f'syntax: {self.syntax}',
+                    f'coloring: {self.coloring}',
+                    f'cost time: {end - start:>.2f}'
+                ])
+            )
 
     # TODO: Update the bracket trees dynamically rather
     # than reconstruct them from beginning every time.

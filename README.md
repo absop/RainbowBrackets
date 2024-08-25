@@ -68,6 +68,8 @@ Settings template
 
     "syntax_specific": {
         "Scheme": {
+            "coloring": true,
+
             "extensions": [".scm", ".ss"],
 
             "ignored_scopes": [
@@ -76,6 +78,8 @@ Settings template
         },
 
         "JSON": {
+            "coloring": true,
+
             "bracket_pairs": {
                 "{": "}",
                 "[": "]"

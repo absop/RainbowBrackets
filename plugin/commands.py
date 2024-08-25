@@ -57,6 +57,7 @@ class RbSetupCommand(RbViewCommand):
 class RbCloseCommand(RbViewCommand):
     def run(self, edit):
         _manager.close_view_executor(self.view)
+        self.view.settings().set('rb_enable', False)
 
     def is_enabled(self):
         return self.get_executor() is not None

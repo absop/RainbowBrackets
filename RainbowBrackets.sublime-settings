@@ -39,6 +39,8 @@
         },
 
         "JSON": {
+            "coloring": true,
+
             "bracket_pairs": {
                 "{": "}",
                 "[": "]",
@@ -75,6 +77,8 @@
         },
 
         "Scheme": {
+            "coloring": true,
+
             "bracket_pairs": {
                 "(": ")",
                 "[": "]",

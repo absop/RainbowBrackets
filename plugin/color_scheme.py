@@ -111,7 +111,7 @@ class ColorSchemeManager:
         cache_path.joinpath(
             cs_path.with_suffix('.sublime-color-scheme').name
             ).write_text(cs_text)
-        Debuger.print(f'write color scheme {cs_path.stem}')
+        Debuger.print(f'Write color scheme {cs_path.stem}')
 
     def cache_path(self):
         try:
@@ -134,7 +134,7 @@ class ColorSchemeManager:
         nearest_bg = _nearest_color(bg)
         color_map = dict(zip(builtin_color_names, colors))
         for scope, color in self.plain_rules[rules_index]:
-            if scope.startswith('error.'):
+            if scope.endswith('error._rb'):
                 background = bg
             else:
                 background = nearest_bg
@@ -172,7 +172,7 @@ class ColorSchemeManager:
             if file.stem not in inuse_color_schemes:
                 try:
                     file.unlink()
-                    Debuger.print('removed', file.name)
+                    Debuger.print('Removed', file.name)
                 except:
                     pass
 
