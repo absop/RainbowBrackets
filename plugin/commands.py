@@ -2,7 +2,6 @@ import re
 import sublime
 import sublime_plugin
 
-from sublime  import Region
 from .consts  import SETTINGS_FILE
 from .logger  import Logger
 from .manager import RainbowBracketsViewManager as _manager
@@ -64,64 +63,76 @@ class RbCloseCommand(RbViewCommand):
 
 
 class RbEditBracketsCommand(sublime_plugin.TextCommand):
-    def run(self, edit, operation="", to="", select_content=True):
-        def find_cursor_brackets(regex=None):
-            last_bracket = None
-            for region in view.sel():
-                bracket = self.find_nearest(trees, region, regex)
-                if bracket is None or bracket == last_bracket:
-                    continue
-                else:
-                    last_bracket = bracket
-                    yield bracket
+    def __init__(self, view):
+        self.view = view
+        self.operators = {
+            'select': self.select,
+            'remove': self.remove,
+            'transform': self.transform,
+        }
 
-        view  = self.view
-        trees = _manager.get_view_bracket_trees(view)
-        if not trees:
+    def run(self, edit, operation='', **args):
+        trees = _manager.get_view_bracket_trees(self.view)
+        if trees:
+            self.operators[operation](edit, trees, **args)
+
+    def remove(self, edit, bracket_trees, select_content):
+        pairs = [p for p in self._find_cursor_brackets(bracket_trees)]
+        regions = [r for p in pairs for r in p]
+        regions.sort()
+        for r in reversed(regions):
+            self.view.erase(edit, r)
+        if select_content:
+            selections = []
+            Region = sublime.Region
+            for p in pairs:
+                begin = p[0].a - regions.index(p[0])
+                end = p[1].a - regions.index(p[1])
+                selections.append(Region(begin, end))
+            self.view.sel().add_all(selections)
+
+    def select(self, edit, bracket_trees, to=''):
+        regex = to and re.compile(to + r'\b') or None
+        for p in self._find_cursor_brackets(bracket_trees, regex=regex):
+            region = self._cover(p)
+            self.view.sel().add(region)
+
+    def transform(self, edit, bracket_trees, to):
+        left = to
+        brackets = _manager.get_view_bracket_pairs(self.view)
+        if not brackets or brackets.get(left) is None:
             return
+        right = brackets[left]
+        replacements = []
+        for p in self._find_cursor_brackets(bracket_trees):
+            if self.view.substr(p[0]) == left:
+                continue
+            replacements.append((p[0], left))
+            replacements.append((p[1], right))
+        replacements.sort(key=lambda i:i[0], reverse=True)
+        for region, content in replacements:
+            self.view.replace(edit, region, content)
 
-        if operation == "select":
-            regex = to and re.compile(to + r'\b') or None
-            for p in find_cursor_brackets(regex=regex):
-                region = self.cover(p)
-                view.sel().add(region)
+    def _cover(self, bracket_pair, _Region=sublime.Region):
+        return _Region(bracket_pair[0].a, bracket_pair[1].b)
 
-        elif operation == "remove":
-            pairs = [p for p in find_cursor_brackets()]
-            regions = [r for p in pairs for r in p]
-            regions.sort()
-            for r in reversed(regions):
-                view.erase(edit, r)
-            if select_content:
-                selections = []
-                for p in pairs:
-                    begin = p[0].a - regions.index(p[0])
-                    end = p[1].a - regions.index(p[1])
-                    selections.append(Region(begin, end))
-                view.sel().add_all(selections)
+    def _find_cursor_brackets(self, trees, regex=None):
+        last_bracket = None
+        for region in self.view.sel():
+            bracket = self._find_nearest(trees, region, regex)
+            if bracket is None or bracket == last_bracket:
+                continue
+            else:
+                last_bracket = bracket
+                yield bracket
 
-        elif operation == "transform":
-            mapping = _manager.get_view_bracket_pairs(view)
-            replace_list = []
-            for p in find_cursor_brackets():
-                if view.substr(p[0]) == to:
-                    continue
-                replace_list.append((p[0], to))
-                replace_list.append((p[1], mapping[to]))
-            replace_list.sort(key=lambda i:i[0], reverse=True)
-            for region, content in replace_list:
-                view.replace(edit, region, content)
-
-    def cover(self, bracket_pair):
-        return Region(bracket_pair[0].a, bracket_pair[1].b)
-
-    def find_nearest(self, trees, r, regex):
-        pairs = self.binary_path_search(trees, r.begin(), r.end())
+    def _find_nearest(self, trees, r, regex, _Region=sublime.Region):
+        pairs = self._binary_path_search(trees, r.begin(), r.end())
         bracket = None
         if pairs and regex is not None:
             for p in reversed(pairs):
                 point = p[0].end()
-                text = self.view.substr(Region(point, point + 31))
+                text = self.view.substr(_Region(point, point + 31))
                 if regex.match(text) is not None:
                     bracket = p
                     break
@@ -138,7 +149,7 @@ class RbEditBracketsCommand(sublime_plugin.TextCommand):
                     break
         return bracket
 
-    def binary_path_search(self, trees, r_begin, r_end):
+    def _binary_path_search(self, trees, r_begin, r_end):
         bracket_path = []
         while True:
             found_closer = False
