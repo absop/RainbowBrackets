@@ -4,15 +4,15 @@ import sublime_plugin
 
 from sublime  import Region
 from .consts  import SETTINGS_FILE
-from .debug   import Debuger
+from .logger  import Logger
 from .manager import RainbowBracketsViewManager as _manager
 from .color_scheme import cs_mgr
 
 
 class RbToggleDebugCommand(sublime_plugin.ApplicationCommand):
     def run(self):
-        Debuger.debug = not Debuger.debug
-        sublime.load_settings(SETTINGS_FILE).set("debug", Debuger.debug)
+        Logger.debug = not Logger.debug
+        sublime.load_settings(SETTINGS_FILE).set('debug', Logger.debug)
         sublime.save_settings(SETTINGS_FILE)
 
 

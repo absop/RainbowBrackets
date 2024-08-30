@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 from .color_scheme  import cs_mgr
 from .consts        import PACKAGE_NAME
 from .consts        import SETTINGS_FILE
-from .debug         import Debuger
+from .logger        import Logger
 from .executor      import RainbowBracketsExecutor
 
 
@@ -102,8 +102,8 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
             for ext in config.get('extensions', []):
                 syntaxes_by_ext[ext] = syntax
 
-        Debuger.debug = cls.settings.get('debug', False)
-        Debuger.pprint(configs_by_stx)
+        Logger.debug = cls.settings.get('debug', False)
+        Logger.pprint(configs_by_stx)
 
         cs_mgr.set_colors(list(scope_color_map.items()))
 
@@ -125,7 +125,7 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
             if (syntax == executor.syntax and
                 config == executor.config):
                 continue
-            Debuger.print(f'Reloading {executor.view_file_name()}')
+            Logger.print(f'Reloading {executor.view_file_name()}')
             executor.clear_bracket_regions()
             executor.__init__(view, syntax, config)
             executor.load()

@@ -3,7 +3,7 @@ import json
 from .consts import PACKAGE_NAME
 
 
-class Debuger():
+class Logger():
     debug = False
     employer = PACKAGE_NAME
 

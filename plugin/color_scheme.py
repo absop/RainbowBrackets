@@ -7,7 +7,7 @@ from pathlib import PurePath, Path
 
 import sublime
 
-from .debug  import Debuger
+from .logger import Logger
 from .consts import DEFAULT_CS
 from .consts import PACKAGE_NAME
 from .consts import PACKAGE_URL
@@ -111,7 +111,7 @@ class ColorSchemeManager:
         cache_path.joinpath(
             cs_path.with_suffix('.sublime-color-scheme').name
             ).write_text(cs_text)
-        Debuger.print(f'Write color scheme {cs_path.stem}')
+        Logger.print(f'Write color scheme {cs_path.stem}')
 
     def cache_path(self):
         try:
@@ -172,7 +172,7 @@ class ColorSchemeManager:
             if file.stem not in inuse_color_schemes:
                 try:
                     file.unlink()
-                    Debuger.print('Removed', file.name)
+                    Logger.print('Removed', file.name)
                 except:
                     pass
 

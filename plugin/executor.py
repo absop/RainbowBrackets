@@ -3,7 +3,7 @@ import os
 import time
 import sublime
 
-from .debug  import Debuger
+from .logger import Logger
 
 
 class BracketTree:
@@ -36,7 +36,7 @@ class RainbowBracketsExecutor():
 
     def __del__(self):
         self.clear_bracket_regions()
-        Debuger.print(f'Exited from {self.view_file_name()}')
+        Logger.print(f'Exited from {self.view_file_name()}')
 
     def view_file_name(self):
         return os.path.basename(self.view.file_name() or 'untitled')
@@ -45,8 +45,8 @@ class RainbowBracketsExecutor():
         start = time.time()
         self.check_bracket_regions()
         end = time.time()
-        if Debuger.debug:
-            Debuger.print(
+        if Logger.debug:
+            Logger.print(
                 '\n\t'.join([
                     f'Loaded on {self.view_file_name()}',
                     f'pattern: {self.pattern}',
