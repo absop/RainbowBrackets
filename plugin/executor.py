@@ -3,32 +3,40 @@ import os
 import time
 import sublime
 
+from typing import Callable, Dict, List, Optional, TypedDict
+from typing_extensions import Self
+
 from .logger import Logger
 
 
 class BracketTree:
     __slots__ = ['opening', 'closing', 'contain']
 
-    def __init__(self, opening, closing, contain):
+    def __init__(
+        self,
+        opening: sublime.Region,
+        closing: sublime.Region,
+        contain: List[Self]
+    ):
         self.opening = opening
         self.closing = closing
         self.contain = contain
 
 
 class RainbowBracketsExecutor():
-    def __init__(self, view, syntax, config):
-        self.err_key   = config['err_key']
-        self.err_scope = config['err_scope']
-        self.coloring  = config['coloring']
-        self.keys      = config['keys']
-        self.scopes    = config['scopes']
-        self.selector  = config['selector']
-        self.brackets  = config['bracket_pairs']
-        self.pattern   = config['pattern']
+    def __init__(self, view: sublime.View, syntax: Optional[str], config):
+        self.err_key   = config['err_key']        # type: str
+        self.err_scope = config['err_scope']      # type: str
+        self.coloring  = config['coloring']       # type: bool
+        self.keys      = config['keys']           # type: List[str]
+        self.scopes    = config['scopes']         # type: List[str]
+        self.selector  = config['selector']       # type: str
+        self.brackets  = config['bracket_pairs']  # type: Dict[str, str]
+        self.pattern   = config['pattern']        # type: str
         self.color_number = len(self.keys)
-        self.err_bracket_regions   = []
-        self.bracket_regions_lists = []
-        self.bracket_regions_trees = []
+        self.err_bracket_regions: List[sublime.Region] = []
+        self.bracket_regions_lists: List[List[sublime.Region]] = []
+        self.bracket_regions_trees: List[BracketTree] = []
         self.regexp = re.compile(self.pattern)
         self.syntax = syntax
         self.config = config
@@ -113,13 +121,7 @@ class RainbowBracketsExecutor():
                 node.closing = region
                 tree_node_stack[-1].contain.append(node)
 
-        view_full_text = self.view.substr(sublime.Region(0, self.view.size()))
-        self.iterate_matches(
-            self.regexp.finditer(view_full_text),
-            self.view.match_selector,
-            self.selector,
-            handle_bracket_region
-        )
+        self._iterate_brackets(handle_bracket_region)
 
     def construct_bracket_trees_and_lists(self):
         self.err_bracket_regions   = []
@@ -158,20 +160,18 @@ class RainbowBracketsExecutor():
             else:
                 self.err_bracket_regions.append(region)
 
-        view_full_text = self.view.substr(sublime.Region(0, self.view.size()))
-        self.iterate_matches(
-            self.regexp.finditer(view_full_text),
-            self.view.match_selector,
-            self.selector,
-            handle_bracket_region
-        )
-
+        self._iterate_brackets(handle_bracket_region)
         self.bracket_regions_lists = [ls for ls in regions_by_layer if ls]
 
-    def iterate_matches(
-        self, matches, ignore, ignored_scope_selector, handle,
+    def _iterate_brackets(
+        self,
+        handle: Callable[[str, sublime.Region], None],
         Region=sublime.Region
     ):
+        full_text = self.view.substr(Region(0, self.view.size()))
+        matches = self.regexp.finditer(full_text)
+        ignore = self.view.match_selector
+        ignored_scope_selector = self.selector
         if ignored_scope_selector:
             for m in matches:
                 if ignore(m.span()[0], ignored_scope_selector):

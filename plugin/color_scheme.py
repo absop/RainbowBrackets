@@ -25,7 +25,7 @@ builtin_color_names = [
 ]
 
 
-def _nearest_color(color : str):
+def _nearest_color(color: str):
     """
     Assume the input color is well-formed
     """
@@ -40,9 +40,9 @@ PlainRules = List[Tuple[str, str]]
 
 
 class ColorSchemeManager:
-    plain_rules : Dict[str, PlainRules] = {}
+    plain_rules: Dict[str, PlainRules] = {}
 
-    view_current_cs : Dict[sublime.View, Optional[str]] = {}
+    view_current_cs: Dict[sublime.View, Optional[str]] = {}
 
     def __new__(cls, *args, **kwargs):
         if hasattr(cls, 'objref'):
@@ -52,7 +52,7 @@ class ColorSchemeManager:
         cls.objref = weakref.ref(self)
         return self
 
-    def set_colors(self, scope_color_pairs : PlainRules):
+    def set_colors(self, scope_color_pairs: PlainRules):
         index = str(scope_color_pairs)
         self.last_written_cs = None
         self.plain_rules[index] = scope_color_pairs
@@ -61,7 +61,7 @@ class ColorSchemeManager:
         for view in self.view_current_cs:
             self.rewrite_view_cs(view)
 
-    def attach_view(self, view : sublime.View):
+    def attach_view(self, view: sublime.View):
         self.view_current_cs[view] = None
         def on_change():
             view_new_cs = settings.get('color_scheme', DEFAULT_CS)
@@ -72,11 +72,11 @@ class ColorSchemeManager:
         settings = view.settings()
         settings.add_on_change('rb.color_scheme_mgr', on_change)
 
-    def detach_view(self, view : sublime.View):
+    def detach_view(self, view: sublime.View):
         view.settings().clear_on_change('rb.color_scheme_mgr')
         self.view_current_cs.pop(view, None)
 
-    def rewrite_view_cs(self, view : sublime.View):
+    def rewrite_view_cs(self, view: sublime.View):
         cs = self.view_current_cs[view]
         if cs is None:
             return
@@ -93,7 +93,7 @@ class ColorSchemeManager:
 
         sublime.set_timeout(update_cs, 250)
 
-    def write_view_cs(self, view : sublime.View, color_scheme : str) -> None:
+    def write_view_cs(self, view: sublime.View, color_scheme: str) -> None:
         """
         We assume that there are no two CS with the same name
         and different extensions. Even if they do, they are not
@@ -123,7 +123,7 @@ class ColorSchemeManager:
 
     @lru_cache
     def generate_cs_text(self,
-        colors : Tuple[str], bg : str, rules_index : str) -> str:
+        colors: Tuple[str], bg: str, rules_index: str) -> str:
         """
         Generate the color scheme text from the given colors,
         background color and rules index, use lru_cache to

@@ -61,7 +61,7 @@ def compile_config(
 class RainbowBracketsViewManager(sublime_plugin.EventListener):
     default_config = {}
     configs_by_stx = {}
-    syntaxes_by_ext = {}
+    syntaxes_by_ext: Dict[str, str] = {}
     view_executors: Dict[int, RainbowBracketsExecutor] = {}
     is_ready = False
 
@@ -133,7 +133,7 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
             cls.close_view_executor(view)
 
     @classmethod
-    def check_view_add_executor(cls, view, force=False):
+    def check_view_add_executor(cls, view: sublime.View, force=False):
         if not cls.is_ready:
             if force:
                 show_error_message('error in loading settings')
@@ -155,7 +155,7 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
         return None
 
     @classmethod
-    def get_syntax_config(cls, view):
+    def get_syntax_config(cls, view: sublime.View):
         syntax = cls.get_view_syntax(view)
         if syntax is not None:
             config = ChainMap(cls.configs_by_stx[syntax], cls.default_config)
@@ -175,38 +175,39 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
         return None
 
     @classmethod
-    def force_add_executor(cls, view):
+    def force_add_executor(cls, view: sublime.View):
         view.settings().set('rb_enable', True)
         return cls.check_view_add_executor(view, force=True)
 
     @classmethod
-    def get_view_executor(cls, view):
+    def get_view_executor(cls, view: sublime.View):
         return cls.view_executors.get(view.view_id, None)
 
     @classmethod
     def check_load_active_view(cls):
         active_view = sublime.active_window().active_view()
-        cls.check_view_load_executor(active_view)
+        if active_view:
+            cls.check_view_load_executor(active_view)
 
     @classmethod
-    def check_view_load_executor(cls, view):
+    def check_view_load_executor(cls, view: sublime.View):
         executor = view.size() and cls.check_view_add_executor(view)
         if executor and not executor.bracket_regions_trees:
             executor.load()
 
     @classmethod
-    def setup_view_executor(cls, view):
+    def setup_view_executor(cls, view: sublime.View):
         executor = cls.force_add_executor(view)
         executor and executor.load()  # type: ignore
 
     @classmethod
-    def close_view_executor(cls, view):
+    def close_view_executor(cls, view: sublime.View):
         executor = cls.view_executors.pop(view.view_id, None)
         if executor and executor.coloring:
             executor.clear_bracket_regions()
 
     @classmethod
-    def color_view(cls, view):
+    def color_view(cls, view: sublime.View):
         executor = cls.get_view_executor(view)
         if executor and not executor.coloring:
             executor.coloring = True
@@ -218,38 +219,38 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
                 executor.load()
 
     @classmethod
-    def sweep_view(cls, view):
+    def sweep_view(cls, view: sublime.View):
         executor = cls.get_view_executor(view)
         if executor and executor.coloring:
             executor.coloring = False
             executor.clear_bracket_regions()
 
     @classmethod
-    def get_view_bracket_pairs(cls, view):
+    def get_view_bracket_pairs(cls, view: sublime.View):
         executor = cls.get_view_executor(view)
         return executor and executor.brackets
 
     @classmethod
-    def get_view_bracket_trees(cls, view):
+    def get_view_bracket_trees(cls, view: sublime.View):
         executor = cls.get_view_executor(view)
         if not executor:
             cls.setup_view_executor(view)
             executor = cls.get_view_executor(view)
         return executor and executor.bracket_regions_trees
 
-    def on_load(self, view):
+    def on_load(self, view: sublime.View):
         self.check_view_load_executor(view)
 
-    def on_post_save(self, view):
+    def on_post_save(self, view: sublime.View):
         self.check_view_load_executor(view)
 
-    def on_activated(self, view):
+    def on_activated(self, view: sublime.View):
         self.check_view_load_executor(view)
 
-    def on_modified(self, view):
+    def on_modified(self, view: sublime.View):
         executor = self.view_executors.get(view.view_id, None)
         executor and executor.check_bracket_regions()  # type: ignore
 
-    def on_close(self, view):
+    def on_close(self, view: sublime.View):
         self.view_executors.pop(view.view_id, None)
         cs_mgr.detach_view(view)

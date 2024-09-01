@@ -1,10 +1,14 @@
 import re
+import time
 import sublime
 import sublime_plugin
+
+from typing import List, Optional, Pattern, Tuple
 
 from .consts  import SETTINGS_FILE
 from .logger  import Logger
 from .manager import RainbowBracketsViewManager as _manager
+from .executor import BracketTree
 from .color_scheme import cs_mgr
 
 
@@ -84,11 +88,11 @@ class RbEditBracketsCommand(sublime_plugin.TextCommand):
             self.view.erase(edit, r)
         if select_content:
             selections = []
-            Region = sublime.Region
+            _Region = sublime.Region
             for p in pairs:
                 begin = p[0].a - regions.index(p[0])
                 end = p[1].a - regions.index(p[1])
-                selections.append(Region(begin, end))
+                selections.append(_Region(begin, end))
             self.view.sel().add_all(selections)
 
     def select(self, edit, bracket_trees, to=''):
@@ -116,7 +120,11 @@ class RbEditBracketsCommand(sublime_plugin.TextCommand):
     def _cover(self, bracket_pair, _Region=sublime.Region):
         return _Region(bracket_pair[0].a, bracket_pair[1].b)
 
-    def _find_cursor_brackets(self, trees, regex=None):
+    def _find_cursor_brackets(
+        self,
+        trees: List[BracketTree],
+        regex: Optional[Pattern[str]] =None
+    ):
         last_bracket = None
         for region in self.view.sel():
             bracket = self._find_nearest(trees, region, regex)
@@ -126,8 +134,14 @@ class RbEditBracketsCommand(sublime_plugin.TextCommand):
                 last_bracket = bracket
                 yield bracket
 
-    def _find_nearest(self, trees, r, regex, _Region=sublime.Region):
-        pairs = self._binary_path_search(trees, r.begin(), r.end())
+    def _find_nearest(
+        self,
+        trees: List[BracketTree],
+        region: sublime.Region,
+        regex: Optional[Pattern[str]],
+        _Region=sublime.Region
+    ):
+        pairs = self._binary_path_search(trees, region.begin(), region.end())
         bracket = None
         if pairs and regex is not None:
             for p in reversed(pairs):
@@ -141,16 +155,21 @@ class RbEditBracketsCommand(sublime_plugin.TextCommand):
         elif pairs:
             bracket = pairs[-1]
 
-        if bracket is None and r.empty():
+        if bracket is None and region.empty():
             for tree in trees:
-                if (tree.opening.a == r.a or
-                    tree.closing.b == r.a):
+                if (tree.opening.a == region.a or
+                    tree.closing.b == region.a):
                     bracket = (tree.opening, tree.closing)
                     break
         return bracket
 
-    def _binary_path_search(self, trees, r_begin, r_end):
-        bracket_path = []
+    def _binary_path_search(
+        self,
+        trees: List[BracketTree],
+        r_begin: int,
+        r_end: int
+    ):
+        bracket_path: List[Tuple[sublime.Region, sublime.Region]] = []
         while True:
             found_closer = False
             lo, hi = 0, len(trees) - 1
