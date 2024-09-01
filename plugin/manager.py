@@ -4,7 +4,7 @@ import sublime
 import sublime_plugin
 
 from collections import ChainMap
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Mapping, Optional, Tuple
 
 from .color_scheme  import cs_mgr
 from .consts        import PACKAGE_NAME
@@ -155,24 +155,27 @@ class RainbowBracketsViewManager(sublime_plugin.EventListener):
         return None
 
     @classmethod
-    def get_syntax_config(cls, view: sublime.View):
-        syntax = cls.get_view_syntax(view)
-        if syntax is not None:
-            config = ChainMap(cls.configs_by_stx[syntax], cls.default_config)
-        else:
-            config = cls.default_config
-        return syntax, config
-
-    @classmethod
-    def get_view_syntax(cls, view):
+    def get_syntax_config(
+        cls, view: sublime.View
+    ) -> Tuple[Optional[str], Mapping[str, Any]]:
+        config = None
         syntax = view.syntax()
-        if syntax and syntax.name in cls.configs_by_stx:
-            return syntax.name
-        filename = view.file_name()
-        if filename:
-            ext = os.path.splitext(filename)[1]
-            return cls.syntaxes_by_ext.get(ext, None)
-        return None
+        if syntax:
+            syntax = syntax.name
+        if syntax in cls.configs_by_stx:
+            config = cls.configs_by_stx[syntax]
+        else:
+            filename = view.file_name()
+            if filename:
+                ext = os.path.splitext(filename)[1]
+                stx = cls.syntaxes_by_ext.get(ext, None)
+                if stx in cls.configs_by_stx:
+                    config = cls.configs_by_stx[stx]
+                    syntax = stx
+        if config is not None:
+            return syntax, ChainMap(config, cls.default_config)
+        else:
+            return syntax, cls.default_config
 
     @classmethod
     def force_add_executor(cls, view: sublime.View):
