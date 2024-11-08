@@ -1,0 +1,7 @@
+=> 4.3.0
+
+# Features and Fixes
+
+- Supported outward-spreading bracket transformations
+- Fixed `ignored_scopes` for Bash
+- Various small improvements
