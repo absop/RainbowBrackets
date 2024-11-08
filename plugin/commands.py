@@ -3,7 +3,7 @@ import time
 import sublime
 import sublime_plugin
 
-from typing import List, Optional, Pattern, Tuple
+from typing import Iterable, List, Optional, Pattern, Tuple
 
 from .consts  import SETTINGS_FILE
 from .logger  import Logger
@@ -69,6 +69,7 @@ class RbCloseCommand(RbViewCommand):
 class RbEditBracketsCommand(sublime_plugin.TextCommand):
     def __init__(self, view):
         self.view = view
+        self.timestamp = 0
         self.operators = {
             'select': self.select,
             'remove': self.remove,
@@ -106,13 +107,33 @@ class RbEditBracketsCommand(sublime_plugin.TextCommand):
         brackets = _manager.get_view_bracket_pairs(self.view)
         if not brackets or brackets.get(left) is None:
             return
+        timestamp = time.time()
+        look_farther = False
+        if timestamp - self.timestamp < 1 and left == self.last_tobe:
+            # Look further away when the keyboard is repeatedly pressed
+            look_farther = True
+        self.timestamp = timestamp
+        self.last_tobe = left
         right = brackets[left]
-        replacements = []
-        for p in self._find_cursor_brackets(bracket_trees):
-            if self.view.substr(p[0]) == left:
-                continue
-            replacements.append((p[0], left))
-            replacements.append((p[1], right))
+
+        points = self.view.sel()
+        while True:
+            replacements = []
+            outer_points = []
+            found = False
+            for p in self._find_cursor_brackets(bracket_trees, cursors=points):
+                outer_points.append(p[0])
+                if self.view.substr(p[0]) == left:
+                    continue
+                replacements.append((p[0], left))
+                replacements.append((p[1], right))
+                found = True
+            if not look_farther or found:
+                break
+            if not outer_points or outer_points == points:
+                break
+            points = outer_points
+
         replacements.sort(key=lambda i:i[0], reverse=True)
         for region, content in replacements:
             self.view.replace(edit, region, content)
@@ -123,10 +144,13 @@ class RbEditBracketsCommand(sublime_plugin.TextCommand):
     def _find_cursor_brackets(
         self,
         trees: List[BracketTree],
-        regex: Optional[Pattern[str]] =None
+        cursors: Optional[Iterable[sublime.Region]] = None,
+        regex: Optional[Pattern[str]] = None
     ):
         last_bracket = None
-        for region in self.view.sel():
+        if cursors is None:
+            cursors = self.view.sel()
+        for region in cursors:
             bracket = self._find_nearest(trees, region, regex)
             if bracket is None or bracket == last_bracket:
                 continue
