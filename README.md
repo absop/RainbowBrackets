@@ -108,10 +108,10 @@ Settings template
 
 ### Commands
 - Preferences: RainbowBrackets Settings
-- RainbowBrackets: toggle debug
-- RainbowBrackets: make rainbow
-- RainbowBrackets: clear rainbow
-- RainbowBrackets: clear color schemes
+- RainbowBrackets: Toggle Debug
+- RainbowBrackets: Color/Sweep
+- RainbowBrackets: Close/Setup
+- RainbowBrackets: Clear Color Schemes
 
 ### Key bindings
 RainbowBrackets support fast opreating brackets, including `select`, `remove` and `transform`.
