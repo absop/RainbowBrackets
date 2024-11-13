@@ -1,0 +1,5 @@
+=> 4.3.2
+
+# Features and Fixes
+
+- Fixed a plugin loading problem caused by the `typing_extensions` module
